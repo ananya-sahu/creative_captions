@@ -291,7 +291,8 @@ def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
 def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
           lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
 
-    device = torch.device('cuda:0')
+    # device = torch.device('cuda:0') #changed
+    device = torch.device('cpu')
     batch_size = args.bs
     epochs = args.epochs
     if not os.path.exists(output_dir):
