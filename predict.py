@@ -20,6 +20,7 @@ import PIL.Image
 
 import cog
 import tqdm
+import json
 
 # import torch
 
@@ -305,8 +306,8 @@ def generate2(
     return generated_list[0]
 
 #added to not use cog
-def main():
-        image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
+def predict_caption(image):
+        #image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
         use_beam_search = False
         device = torch.device("cpu")
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
@@ -333,11 +334,27 @@ def main():
             return generate_beam(model, tokenizer, embed=prefix_embed)[0]
         else:
             return generate2(model, tokenizer, embed=prefix_embed)
+
+def main():
+        generated_captions = {}
+        #load the validation imgs 
+        with open('./data/coco/annotations/train_caption.json', 'r') as f:
+            data = json.load(f)
         
+        for i in tqdm(len(data)): #changed len(data) to 100
+            d = data[i]
+            img_id = d["image_id"]
+            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            gen = predict_caption(filename)
+            generated_captions[data[i]] = gen
+        
+
+        with open("captions", "w") as outfile:
+            json.dump(generated_captions, outfile)
 
     
 if __name__ == '__main__':
-    print(main())
+    main()
 
 
      
