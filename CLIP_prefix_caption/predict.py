@@ -1,6 +1,7 @@
 # Prediction interface for Cog ⚙️
 # Reference: https://github.com/replicate/cog/blob/main/docs/python.md
 
+#use torch.device('cuda:0')
 import clip
 import os
 from torch import nn
