@@ -310,7 +310,8 @@ def generate2(
 def predict_caption(image):
         #image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
         use_beam_search = False
-        device = torch.device("cpu")
+        #device = torch.device("cpu")
+        device = torch.device('cuda:0')
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
         tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
