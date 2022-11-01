@@ -6,6 +6,7 @@ Create a TextDataset object to gather data samples and turn them into batches.
 import csv
 import codecs
 import torch
+import pandas as pd
 from torch.utils.data import Dataset, DataLoader, \
     RandomSampler, SequentialSampler
 from transformers import BertTokenizer
@@ -161,6 +162,47 @@ def load_data(batch_size=32):
         "data/VUA/VUA_validation.csv", novelty_scores, batch_size=batch_size)
     meta_test = get_metaphor_data(
         "data/VUA/VUA_test.csv", novelty_scores, batch_size=batch_size)
+    return meta_train, meta_dev, meta_test
+
+def load_data(batch_size=32):
+    """Given a batch size load VUA and novelty scores from file.
+    Args:
+        batch_size: int
+    Returns:
+        train: DataLoader object from which you can sample batches
+        dev: DataLoader object from which you can sample batches
+        text: DataLoader object from which you can sample batches
+    """
+    novelty_scores = dict()
+    with codecs.open(f"data/VUA/VUA_novelty_scores.csv", encoding="utf-8",
+                     errors='ignore') as file:
+        lines = csv.reader(file)
+        next(lines)
+        for line in lines:
+            words = []
+            scores = []
+            for w in line[2].split():
+                if "_" in w:
+                    w, score = w.split("_")
+                    words.append(w)
+                    scores.append(float(score))
+                else:
+                    words.append(w)
+                    scores.append(-2)
+            if words:
+                novelty_scores[' '.join(words)] = scores
+
+    meta_train = get_metaphor_data(
+        "data/VUA/VUA_train_small.csv", novelty_scores, train=True, batch_size=batch_size
+    )
+    meta_dev = get_metaphor_data(
+        "data/VUA/VUA_validation.csv", novelty_scores, batch_size=batch_size)
+
+    with open('data/captions.json', encoding='utf-8') as inputfile:
+        df = pd.read_json(inputfile)
+    df.to_csv('captions_test.csv', encoding='utf-8', index=False)
+    meta_test = get_metaphor_data(
+        "caption_test.csv", novelty_scores, batch_size=batch_size)
     return meta_train, meta_dev, meta_test
 
 

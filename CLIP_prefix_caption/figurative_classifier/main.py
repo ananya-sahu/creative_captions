@@ -7,7 +7,7 @@ import argparse
 import torch
 import numpy as np
 
-from data import load_data
+from data import load_data, load_caption_data
 from train import train
 from evaluate import evaluate
 from model import MetaphorModel
@@ -57,8 +57,8 @@ if __name__ == "__main__":
     # Set seed to combat random effects
     set_seed(args["seed"])
 
-    train_set, dev, test = load_data(args["batch_size"])
-
+    # train_set, dev, test = load_data(args["batch_size"])
+    train_set, dev, test = load_caption_data(args["batch_size"])
     # Initialise an empty model and train it.
     model = MetaphorModel()
     if torch.cuda.is_available():
