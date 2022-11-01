@@ -7,6 +7,7 @@ import csv
 import codecs
 import torch
 import pandas as pd
+import json
 from torch.utils.data import Dataset, DataLoader, \
     RandomSampler, SequentialSampler
 from transformers import BertTokenizer
@@ -164,6 +165,7 @@ def load_data(batch_size=32):
         "data/VUA/VUA_test.csv", novelty_scores, batch_size=batch_size)
     return meta_train, meta_dev, meta_test
 
+# loading caption data for our image caption evaluation step
 def load_caption_data(batch_size=32):
     novelty_scores = dict()
     with codecs.open(f"data/VUA/VUA_novelty_scores.csv", encoding="utf-8",
@@ -190,11 +192,12 @@ def load_caption_data(batch_size=32):
     meta_dev = get_metaphor_data(
         "data/VUA/VUA_validation.csv", novelty_scores, batch_size=batch_size)
 
-    with open('data/captions.json', encoding='utf-8') as inputfile:
-        df = pd.read_json(inputfile)
-    df.to_csv('captions_test.csv', encoding='utf-8', index=False)
+    with open('data/captions.json', 'r') as f:
+        data = json.load(f)
+        df = pd.DataFrame({'image_id': data.keys(), 'sentence': data.values()})
+    df.to_csv('data/captions_test.csv', encoding='utf-8', index=False) 
     meta_test = get_metaphor_data(
-        "caption_test.csv", novelty_scores, batch_size=batch_size)
+        "data/captions_test.csv", novelty_scores, batch_size=batch_size)
     return meta_train, meta_dev, meta_test
 
 
@@ -214,7 +217,8 @@ def get_metaphor_data(filename, novelty_scores, train=False, batch_size=64):
         lines = csv.reader(filename)
         next(lines)
         for line in lines:
-            sentence = line[2].replace("M_", "").replace("L_", "").split()
+            #sentence = line[2].replace("M_", "").replace("L_", "").split()
+            sentence = line[1]
             if sentence:
                 label_seq = []
                 for w in line[2].split():
