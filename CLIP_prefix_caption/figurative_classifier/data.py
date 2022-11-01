@@ -164,15 +164,7 @@ def load_data(batch_size=32):
         "data/VUA/VUA_test.csv", novelty_scores, batch_size=batch_size)
     return meta_train, meta_dev, meta_test
 
-def load_data(batch_size=32):
-    """Given a batch size load VUA and novelty scores from file.
-    Args:
-        batch_size: int
-    Returns:
-        train: DataLoader object from which you can sample batches
-        dev: DataLoader object from which you can sample batches
-        text: DataLoader object from which you can sample batches
-    """
+def load_caption_data(batch_size=32):
     novelty_scores = dict()
     with codecs.open(f"data/VUA/VUA_novelty_scores.csv", encoding="utf-8",
                      errors='ignore') as file:
