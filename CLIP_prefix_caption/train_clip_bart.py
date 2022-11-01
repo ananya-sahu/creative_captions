@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import BartForConditionalGeneration, BartTokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import BartForConditionalGeneration, BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
 from tqdm import tqdm
 import os
 import pickle
@@ -222,23 +222,39 @@ class ClipCaptionModel(nn.Module):
     def get_dummy_token(self, batch_size: int, device: torch.device) -> torch.Tensor:
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
-    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
+    #changed
+    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, batch_size, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
-        embedding_text = self.bart.model.shared(tokens)
+        #embedding_text = self.bart.model.shared(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size)
-        embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
+        #embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
-        out = self.bart(inputs_embeds=embedding_cat, decoder_inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
+        decoder_input_ids = self.bart.shift_tokens_right(
+                tokens, self.bart.pad_token_id, self.bart.decoder_start_token_id
+            )
+        #out = self.bart(inputs_embeds=decoder_input_ids, decoder_inputs_embeds=prefix_projections, labels=labels, attention_mask=mask)
+
+
+        out = self.bart(
+            input_ids=decoder_input_ids,
+            encoder_hidden_states=prefix_projections,
+            encoder_attention_mask=torch.ones(batch_size, 1),
+            head_mask=tokens,
+        )
         return out
 
+
+
+    #changed 
     def __init__(self, prefix_length: int, clip_length: Optional[int] = None, prefix_size: int = 512,
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.bart = BartForConditionalGeneration.from_pretrained('facebook/bart-large')
-        self.bart_embedding_size = self.bart.model.shared.weight.shape[1]
+        self.bart = BartModel.from_pretrained('facebook/bart-large').decoder#BartForConditionalGeneration.from_pretrained('facebook/bart-large')
+        #need to fix 
+        self.bart_embedding_size = 1#self.bart.pad_token_id
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
