@@ -1,5 +1,5 @@
-import torch
 import skimage.io as io
+import torch
 import clip
 from PIL import Image
 import pickle
@@ -20,22 +20,24 @@ def main(clip_model_type: str):
     print("%0d captions loaded from json " % len(data))
     all_embeddings = []
     all_captions = []
-    for i in tqdm(range(len(data))): #changed len(data) to 100
+    half = len(data)
+    for i in tqdm(range(half)): #changed len(data) to 100
         d = data[i]
         img_id = d["image_id"]
         filename = f"./data/coco/train2014/COCO_train2014_{int(img_id):012d}.jpg"
         if not os.path.isfile(filename):
             filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
-        image = io.imread(filename)
-        image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)
-        with torch.no_grad():
-            prefix = clip_model.encode_image(image).cpu()
-        d["clip_embedding"] = i
-        all_embeddings.append(prefix)
-        all_captions.append(d)
-        if (i + 1) % 10000 == 0:
-            with open(out_path, 'wb') as f:
-                pickle.dump({"clip_embedding": torch.cat(all_embeddings, dim=0), "captions": all_captions}, f)
+        if os.path.isfile(filename):
+            image = io.imread(filename)
+            image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)
+            with torch.no_grad():
+                prefix = clip_model.encode_image(image).cpu()
+            d["clip_embedding"] = i
+            all_embeddings.append(prefix)
+            all_captions.append(d)
+            if (i + 1) % 10000 == 0:
+                with open(out_path, 'wb') as f:
+                    pickle.dump({"clip_embedding": torch.cat(all_embeddings, dim=0), "captions": all_captions}, f)
 
     with open(out_path, 'wb') as f:
         pickle.dump({"clip_embedding": torch.cat(all_embeddings, dim=0), "captions": all_captions}, f)

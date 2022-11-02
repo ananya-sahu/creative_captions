@@ -19,7 +19,7 @@ from transformers import (
 import skimage.io as io
 import PIL.Image
 
-import cog
+#import cog
 import tqdm
 import json
 
@@ -319,7 +319,9 @@ def predict_caption(image):
         prefix_length = 10
         
         model = ClipCaptionModel(prefix_length)
-        #model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
+        weights = "/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/coco_train/coco_prefix-009.pt"
+        # model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
+        model.load_state_dict(torch.load(weights, map_location=CPU)) 
         model = model.eval()
         model = model.to(device)
            
@@ -338,20 +340,25 @@ def predict_caption(image):
             return generate2(model, tokenizer, embed=prefix_embed)
 
 def main():
-        generated_captions = {}
+        generated_captions = []
         #load the validation imgs 
         with open('./data/coco/annotations/train_caption.json', 'r') as f:
             data = json.load(f)
         
-        for i in tqdm(len(data)): #changed len(data) to 100
+        for i in range(100): #changed len(data) to 100
             d = data[i]
-            img_id = d["image_id"]
+
+            imgid = d["image_id"]
+            img_id = d["id"]
             filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
-            gen = predict_caption(filename)
-            generated_captions[data[i]] = gen
+            if os.path.isfile(filename):
+                gen = predict_caption(filename)
+                #generated_captions[(imgid,img_id)] = gen
+                generated_captions.append({"image_id": imgid, "id": img_id, "caption": gen})
+                print(gen)
         
 
-        with open("captions", "w") as outfile:
+        with open("captions.json", "w") as outfile:
             json.dump(generated_captions, outfile)
 
     
