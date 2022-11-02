@@ -4,7 +4,7 @@ from .bleu.bleu import Bleu
 from .rouge.rouge import Rouge
 from .cider.cider import Cider
 from .spice.spice import Spice
-from .creative.creative import Creative
+#from .creative.creative import Creative
 class COCOEvalCap:
     def __init__(self, coco, cocoRes):
         self.evalImgs = []
@@ -39,8 +39,8 @@ class COCOEvalCap:
             (Bleu(4), ["Bleu_1", "Bleu_2", "Bleu_3", "Bleu_4"]),
             (Rouge(), "ROUGE_L"),
             (Cider(), "CIDEr"),
-            (Spice(), "SPICE"),
-            (Creative(), "CREAT")
+            (Spice(), "SPICE")
+            #(Creative(), "CREAT")
         ]
 
         # =================================================
