@@ -21,6 +21,7 @@ def main(clip_model_type: str):
     all_embeddings = []
     all_captions = []
     half = len(data)
+    count = 0
     for i in tqdm(range(half)): #changed len(data) to 100
         d = data[i]
         img_id = d["image_id"]
@@ -32,12 +33,15 @@ def main(clip_model_type: str):
             image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)
             with torch.no_grad():
                 prefix = clip_model.encode_image(image).cpu()
-            d["clip_embedding"] = i
+            #changed here to i ->count
+            d["clip_embedding"] = count
             all_embeddings.append(prefix)
             all_captions.append(d)
-            if (i + 1) % 10000 == 0:
+            #changed i -> count
+            if (count + 1) % 10000 == 0:
                 with open(out_path, 'wb') as f:
                     pickle.dump({"clip_embedding": torch.cat(all_embeddings, dim=0), "captions": all_captions}, f)
+            count += 1
 
     with open(out_path, 'wb') as f:
         pickle.dump({"clip_embedding": torch.cat(all_embeddings, dim=0), "captions": all_captions}, f)
