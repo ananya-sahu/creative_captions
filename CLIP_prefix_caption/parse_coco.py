@@ -13,7 +13,7 @@ def main(clip_model_type: str):
     #device = torch.device('cuda:0') changed
     device = torch.device('cpu')
     clip_model_name = clip_model_type.replace('/', '_')
-    out_path = f"./data/coco/oscar_split_{clip_model_name}_train_clip_bart.pkl"
+    out_path = f"./data/coco/oscar_split_{clip_model_name}_train_clip.pkl"
     clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
     with open('./data/coco/train_caption_filtered.json', 'r') as f:
         data = json.load(f)
