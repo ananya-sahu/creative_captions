@@ -350,7 +350,7 @@ def main():
 
             imgid = d["image_id"]
             img_id = d["id"]
-            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            filename = f"./data/coco/val2014/COCO_val2014_{int(imgid):012d}.jpg"
             if os.path.isfile(filename):
                 gen = predict_caption(filename)
                 #generated_captions[(imgid,img_id)] = gen
