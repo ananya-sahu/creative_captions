@@ -40,7 +40,13 @@ class ClipCocoDataset(Dataset):
 
     def __getitem__(self, item: int) -> Tuple[torch.Tensor, ...]:
         tokens, mask = self.pad_tokens(item)
-        prefix = self.prefixes[self.caption2embedding[item]]
+        #item = (item//68525)
+        if self.caption2embedding[item]//2 == 0:
+            p = (self.caption2embedding[item]//68525) + (self.caption2embedding[item]%68525)
+        else:
+            p = self.caption2embedding[item]//68525
+        #prefix = self.prefixes[self.caption2embedding[item]]
+        prefix = self.prefixes[p]
         if self.normalize_prefix:
             prefix = prefix.float()
             prefix = prefix / prefix.norm(2, -1)
@@ -292,7 +298,7 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
           lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
 
     device = torch.device('cuda:0') #changed
-    #device = torch.device('cpu')
+   # device = torch.device('cpu')
     batch_size = args.bs
     epochs = args.epochs
     if not os.path.exists(output_dir):

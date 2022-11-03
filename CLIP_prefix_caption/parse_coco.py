@@ -70,7 +70,7 @@ import argparse
 
 
 def main(clip_model_type: str):
-    device = torch.device('cpu')
+    device = torch.device('cuda:0')
     clip_model_name = clip_model_type.replace('/', '_')
     out_path = f"./data/coco/oscar_split_{clip_model_name}_train.pkl"
     clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
@@ -79,7 +79,7 @@ def main(clip_model_type: str):
     print("%0d captions loaded from json " % len(data))
     all_embeddings = []
     all_captions = []
-    for i in tqdm(range(100)): #len(data))
+    for i in tqdm(range(len(data))): #len(data))
         d = data[i]
         img_id = d["image_id"]
         filename = f"./data/coco/train2014/COCO_train2014_{int(img_id):012d}.jpg"

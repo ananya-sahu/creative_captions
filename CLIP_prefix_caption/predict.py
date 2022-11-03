@@ -2,6 +2,7 @@
 # Reference: https://github.com/replicate/cog/blob/main/docs/python.md
 
 #use torch.device('cuda:0')
+import skimage.io as io
 import clip
 import os
 from torch import nn
@@ -16,7 +17,6 @@ from transformers import (
     AdamW,
     get_linear_schedule_with_warmup,
 )
-import skimage.io as io
 import PIL.Image
 
 #import cog
@@ -309,7 +309,7 @@ def generate2(
 #added to not use cog
 def predict_caption(image):
         #image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
-        use_beam_search = False
+        use_beam_search = True
         #device = torch.device("cpu")
         device = torch.device('cuda:0')
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
@@ -319,7 +319,7 @@ def predict_caption(image):
         prefix_length = 10
         
         model = ClipCaptionModel(prefix_length)
-        weights = "/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/coco_train/coco_prefix-009.pt"
+        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-005.pt'
         # model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
         model.load_state_dict(torch.load(weights, map_location=CPU)) 
         model = model.eval()
@@ -342,10 +342,10 @@ def predict_caption(image):
 def main():
         generated_captions = []
         #load the validation imgs 
-        with open('./data/coco/annotations/train_caption.json', 'r') as f:
+        with open('./data/coco/annotations/train_caption_filtered.json', 'r') as f:
             data = json.load(f)
         
-        for i in range(100): #changed len(data) to 100
+        for i in range(len(data)): #changed len(data) to 100
             d = data[i]
 
             imgid = d["image_id"]
@@ -360,6 +360,7 @@ def main():
 
         with open("captions.json", "w") as outfile:
             json.dump(generated_captions, outfile)
+       # predict_caption("/home/as5957/creative_captions/CLIP_prefix_caption/data/coco/val2014/COCO_val2014_000000581328.jpg")   
 
     
 if __name__ == '__main__':
