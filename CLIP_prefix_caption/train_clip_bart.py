@@ -236,10 +236,11 @@ class TransformerMapper(nn.Module):
 class ClipCaptionModel(nn.Module):
 
     def get_dummy_token(self, batch_size: int, device: torch.device) -> torch.Tensor:
+        print(batch_size)
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
     #changed
-    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, batch_size: int, mask: Optional[torch.Tensor] = None,
+    def forward(self, batch_size: int, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         #embedding_text = self.bart.model.shared(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size)
