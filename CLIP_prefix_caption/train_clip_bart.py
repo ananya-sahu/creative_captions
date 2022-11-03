@@ -272,7 +272,7 @@ class ClipCaptionModel(nn.Module):
         # edit - Aditi
         self.bart = BartDecoder.from_pretrained("facebook/bart-base")
         #need to fix 
-        self.bart_embedding_size = self.embed_tokens.shape[1]
+        self.bart_embedding_size = self.bart.embed_tokens.shape[1]
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
