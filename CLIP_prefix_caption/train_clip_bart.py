@@ -239,7 +239,7 @@ class ClipCaptionModel(nn.Module):
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
     #changed
-    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, batch_size, mask: Optional[torch.Tensor] = None,
+    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, batch_size: int, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         #embedding_text = self.bart.model.shared(tokens)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size)
@@ -256,7 +256,7 @@ class ClipCaptionModel(nn.Module):
         out = self.bart(
             input_ids=decoder_input_ids,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(int(batch_size), 1),
+            encoder_attention_mask=torch.ones(batch_size, 1),
             head_mask=tokens
         )
         return out
