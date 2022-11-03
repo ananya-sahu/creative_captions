@@ -229,6 +229,7 @@ class ClipCaptionModel(nn.Module):
         print(self.gpt_embedding_size)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
         print(prefix_projections)
+        print(prefix_projections.size())
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
