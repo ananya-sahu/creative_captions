@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import BartForConditionalGeneration, BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
+from transformers import BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
+from transformers.models.bart.modeling_bart import BartDecoder
 from tqdm import tqdm
 import os
 import pickle
@@ -68,7 +69,7 @@ class ClipCocoDataset(Dataset):
             max_seq_len = 0
             for caption in captions_raw:
                 self.captions_tokens.append(torch.tensor(self.tokenizer.encode(caption['caption']), dtype=torch.int64))
-                self.caption2embedding.append(caption["clip_embedding"])
+                self.caption2embedding.append(caption["clip_embedding"]) # THE CLIP EMBEDDINGS ARE SAVED IN CAPTION2EMBEDDING
                 max_seq_len = max(max_seq_len, self.captions_tokens[-1].shape[0])
             # self.max_seq_len = max_seq_len
             with open(f"{data_path[:-4]}_tokens.pkl", 'wb') as f:
@@ -241,7 +242,7 @@ class ClipCaptionModel(nn.Module):
             input_ids=decoder_input_ids,
             encoder_hidden_states=prefix_projections,
             encoder_attention_mask=torch.ones(batch_size, 1),
-            head_mask=tokens,
+            head_mask=tokens
         )
         return out
 
@@ -252,7 +253,9 @@ class ClipCaptionModel(nn.Module):
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.bart = BartModel.from_pretrained('facebook/bart-large').decoder#BartForConditionalGeneration.from_pretrained('facebook/bart-large')
+        #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
+        # edit - Aditi
+        self.bart = BartDecoder.from_pretrained("facebook/bart-base")
         #need to fix 
         self.bart_embedding_size = 1#self.bart.pad_token_id
         if mapping_type == MappingType.MLP:
