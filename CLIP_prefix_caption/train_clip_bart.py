@@ -13,7 +13,15 @@ import argparse
 import json
 from typing import Tuple, Optional, Union
 
-
+# This function is copied from modeling_bart.py
+def shift_tokens_right(input_ids, pad_token_id):
+    """Shift input ids one token to the right, and wrap the last non pad token (usually <eos>)."""
+    prev_output_tokens = input_ids.clone()
+    index_of_eos = (input_ids.ne(pad_token_id).sum(dim=1) - 1).unsqueeze(-1)
+    prev_output_tokens[:, 0] = input_ids.gather(1, index_of_eos).squeeze()
+    prev_output_tokens[:, 1:] = input_ids[:, :-1]
+    return prev_output_tokens
+    
 class MappingType(Enum):
     MLP = 'mlp'
     Transformer = 'transformer'
@@ -257,7 +265,7 @@ class ClipCaptionModel(nn.Module):
         # edit - Aditi
         self.bart = BartDecoder.from_pretrained("facebook/bart-base")
         #need to fix 
-        self.bart_embedding_size = 1#self.bart.pad_token_id
+        self.bart_embedding_size = self.embed_tokens.shape[1]
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
