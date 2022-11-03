@@ -23,9 +23,9 @@ def main(clip_model_type: str):
     for i in tqdm(range(100)): #changed len(data) to 100
         d = data[i]
         img_id = d["image_id"]
-        filename = f"./data/coco/train2014/COCO_train2014_{int(img_id):012d}.jpg"
+        filename = f"./data/coco/train2014_shortened/COCO_train2014_{int(img_id):012d}.jpg"
         if not os.path.isfile(filename):
-            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            filename = f"./data/coco/val2014_shortened/COCO_val2014_{int(img_id):012d}.jpg"
         image = io.imread(filename)
         image = preprocess(Image.fromarray(image)).unsqueeze(0).to(device)
         with torch.no_grad():
