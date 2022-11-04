@@ -8,9 +8,9 @@ import json
 from json import encoder
 encoder.FLOAT_REPR = lambda o: format(o, '.3f')
 
-annFile='/Users/aditipatil/creative_captions/CLIP_prefix_caption/data/coco/annotations/sample_captions_val2014.json'
+annFile='data/coco/annotations/train_caption_filtered.json'
 #subtypes=['results', 'evalImgs', 'eval']
-resFile = '/Users/aditipatil/creative_captions/CLIP_prefix_caption/captions_for_metrics.json'
+resFile = '/Users/aditipatil/creative_captions/CLIP_prefix_caption/captions_for_metric.json'
 
 coco = COCO(annFile)
 cocoRes = coco.loadRes(resFile)
