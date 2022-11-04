@@ -1,9 +1,11 @@
+from distutils.sysconfig import PREFIX
 import torch
 import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import BartForConditionalGeneration, BartTokenizer, AdamW, get_linear_schedule_with_warmup
+from transformers import BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
+from transformers.models.bart.modeling_bart import BartDecoder
 from tqdm import tqdm
 import os
 import pickle
@@ -12,6 +14,21 @@ import argparse
 import json
 from typing import Tuple, Optional, Union
 
+# This function is copied from modeling_bart.py
+def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
+    """
+    Shift input ids one token to the right.
+    """
+    shifted_input_ids = input_ids.new_zeros(input_ids.shape)
+    shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+    shifted_input_ids[:, 0] = decoder_start_token_id
+
+    if pad_token_id is None:
+        raise ValueError("self.model.config.pad_token_id has to be defined.")
+    # replace possible -100 values in labels by `pad_token_id`
+    shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
+
+    return shifted_input_ids
 
 class MappingType(Enum):
     MLP = 'mlp'
@@ -68,7 +85,7 @@ class ClipCocoDataset(Dataset):
             max_seq_len = 0
             for caption in captions_raw:
                 self.captions_tokens.append(torch.tensor(self.tokenizer.encode(caption['caption']), dtype=torch.int64))
-                self.caption2embedding.append(caption["clip_embedding"])
+                self.caption2embedding.append(caption["clip_embedding"]) # THE CLIP EMBEDDINGS ARE SAVED IN CAPTION2EMBEDDING
                 max_seq_len = max(max_seq_len, self.captions_tokens[-1].shape[0])
             # self.max_seq_len = max_seq_len
             with open(f"{data_path[:-4]}_tokens.pkl", 'wb') as f:
@@ -220,25 +237,47 @@ class TransformerMapper(nn.Module):
 class ClipCaptionModel(nn.Module):
 
     def get_dummy_token(self, batch_size: int, device: torch.device) -> torch.Tensor:
+        print(batch_size)
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
-    def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
+    #changed
+    def forward(self, batch_size: int, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
-        embedding_text = self.bart.model.shared(tokens)
-        prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size)
-        embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
+        #embedding_text = self.bart.model.shared(tokens)
+        print(self.prefix_length)
+        print(self.bart_embedding_size)
+        prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size) # prefix_projections should be ([40, 10, 768])
+        print(prefix_projections.size())
+        #embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
-        out = self.bart(inputs_embeds=embedding_cat, decoder_inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
+        decoder_input_ids = shift_tokens_right(
+                tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
+            )
+        #out = self.bart(inputs_embeds=decoder_input_ids, decoder_inputs_embeds=prefix_projections, labels=labels, attention_mask=mask)
+
+        print(batch_size)
+        out = self.bart(
+            input_ids=decoder_input_ids,
+            encoder_hidden_states=prefix_projections,
+            encoder_attention_mask=torch.ones(batch_size, 1),
+            head_mask=tokens
+        )
         return out
 
+
+
+    #changed 
     def __init__(self, prefix_length: int, clip_length: Optional[int] = None, prefix_size: int = 512,
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.bart = BartForConditionalGeneration.from_pretrained('facebook/bart-large')
-        self.bart_embedding_size = self.bart.model.shared.weight.shape[1]
+        #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
+        # edit - Aditi
+        self.bart = BartDecoder.from_pretrained("facebook/bart-base")
+        #need to fix 
+        self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
@@ -291,8 +330,7 @@ def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
 def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
           lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
 
-    # device = torch.device('cuda:0')
-    device = torch.device('cpu')
+    device = torch.device('cuda:0')
     batch_size = args.bs
     epochs = args.epochs
     if not os.path.exists(output_dir):
@@ -312,6 +350,9 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
             model.zero_grad()
             tokens, mask, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
+            print(tokens.size()) # 40 x 21
+            print(mask.size()) # 40 x 31
+            print(prefix.size())
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
