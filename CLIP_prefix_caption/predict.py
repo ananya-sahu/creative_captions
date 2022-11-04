@@ -22,6 +22,7 @@ import PIL.Image
 #import cog
 import tqdm
 import json
+#added
 
 # import torch
 
@@ -350,16 +351,19 @@ def main():
 
             imgid = d["image_id"]
             img_id = d["id"]
-            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            filename = f"./data/coco/val2014/COCO_val2014_{int(imgid):012d}.jpg"
             if os.path.isfile(filename):
                 gen = predict_caption(filename)
                 #generated_captions[(imgid,img_id)] = gen
                 generated_captions.append({"image_id": imgid, "id": img_id, "caption": gen})
                 print(gen)
+                print(imgid)
+                with open('captions.json', 'w') as outfile:
+                    json.dump(generated_captions, outfile)
         
 
-        with open("captions.json", "w") as outfile:
-            json.dump(generated_captions, outfile)
+        #with open("captions.json", "w") as outfile:
+            #json.dump(generated_captions, outfile)
        # predict_caption("/home/as5957/creative_captions/CLIP_prefix_caption/data/coco/val2014/COCO_val2014_000000581328.jpg")   
 
     
