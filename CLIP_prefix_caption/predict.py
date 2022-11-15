@@ -308,23 +308,22 @@ def generate2(
     return generated_list[0]
 
 #added to not use cog
-def predict_caption(image):
-        #image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
-        use_beam_search = True
+def predict_caption(device,model,image,use_beam_search,clip_model, preprocess,prefix_length,tokenizer):
+        #use_beam_search = True
         #device = torch.device("cpu")
-        device = torch.device('cuda:0')
-        clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+        #device = torch.device('cuda:0')
+        #clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+        #tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
         
-        prefix_length = 10
+        #prefix_length = 10
         
-        model = ClipCaptionModel(prefix_length)
-        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-005.pt'
+        #model = ClipCaptionModel(prefix_length)
+        #weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-009.pt'
         # model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
-        model.load_state_dict(torch.load(weights, map_location=CPU)) 
-        model = model.eval()
-        model = model.to(device)
+        #model.load_state_dict(torch.load(weights, map_location=CPU)) 
+        #model = model.eval()
+        #model = model.to(device)
            
         
         image = io.imread(image)
@@ -341,6 +340,21 @@ def predict_caption(image):
             return generate2(model, tokenizer, embed=prefix_embed)
 
 def main():
+        use_beam_search = True
+        device = torch.device('cuda:0')
+        clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+        
+        prefix_length = 10
+        
+        model = ClipCaptionModel(prefix_length)
+
+        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-009.pt'
+        model.load_state_dict(torch.load(weights, map_location=CPU))
+        model = model.eval()
+        model = model.to(device)
+
         generated_captions = []
         #load the validation imgs 
         with open('./data/coco/annotations/train_caption_filtered.json', 'r') as f:
@@ -349,12 +363,13 @@ def main():
         for i in range(len(data)): #changed len(data) to 100
             d = data[i]
 
-            imgid = d["image_id"]
-            img_id = d["id"]
+            #print(d)
+
+            img_id = d["image_id"]
+            imgid = d["id"]
             filename = f"./data/coco/val2014/COCO_val2014_{int(imgid):012d}.jpg"
             if os.path.isfile(filename):
-                gen = predict_caption(filename)
-                #generated_captions[(imgid,img_id)] = gen
+                gen = predict_caption(device,model,filename,use_beam_search,clip_model,preprocess,prefix_length,tokenizer)
                 generated_captions.append({"image_id": imgid, "id": img_id, "caption": gen})
                 print(gen)
                 print(imgid)
