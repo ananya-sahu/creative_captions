@@ -244,8 +244,10 @@ class ClipCaptionModel(nn.Module):
     def forward(self, batch_size: int, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         
+        print(self.prefix.size())
+        print(self.clip_project(prefix).size())
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size) # prefix_projections should be ([40, 10, 768])
-
+        
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
@@ -347,6 +349,7 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
             print(tokens.size())
             print(mask.size())
             print(prefix.size())
+            
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
