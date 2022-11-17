@@ -261,7 +261,9 @@ class ClipCaptionModel(nn.Module):
         print(mask.shape) # torch.Size([40, 29])
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
         print(batch_size)
-        print(self.prefix_length.shape)
+        print(self.prefix_length)
+        x = torch.ones(batch_size, self.prefix_length)
+        print(x.shape)
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
