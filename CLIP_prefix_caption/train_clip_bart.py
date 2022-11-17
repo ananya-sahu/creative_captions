@@ -243,20 +243,17 @@ class ClipCaptionModel(nn.Module):
     #changed
     def forward(self, batch_size: int, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
-        #embedding_text = self.bart.model.shared(tokens)
-        #print(self.prefix_length)
-        #print(self.bart_embedding_size)
+        
+        print(self.prefix.size())
+        print(self.clip_project(prefix).size())
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size) # prefix_projections should be ([40, 10, 768])
-        #print(prefix_projections.size())
-        #embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
+        
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
-        #out = self.bart(inputs_embeds=decoder_input_ids, decoder_inputs_embeds=prefix_projections, labels=labels, attention_mask=mask)
-
         out = self.bart(
             input_ids=decoder_input_ids,
             encoder_hidden_states=prefix_projections,
@@ -352,6 +349,7 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
             print(tokens.size())
             print(mask.size())
             print(prefix.size())
+            
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
