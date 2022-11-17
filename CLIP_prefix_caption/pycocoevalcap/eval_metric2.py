@@ -18,6 +18,7 @@ class COCOEvalCap:
         imgIds = self.params['image_id']
         gts = self.gts
         res = self.res
+        
 
         # =================================================
         # Set up scorers
@@ -26,7 +27,8 @@ class COCOEvalCap:
         tokenizer = PTBTokenizer()
         gts  = tokenizer.tokenize(gts)
         res = tokenizer.tokenize(res)
-
+        print(gts)
+        print(res)
         # =================================================
         # Set up scorers
         # =================================================
@@ -84,7 +86,6 @@ def calculate_metrics(rng,datasetGTS,datasetRES):
         imgToAnnsRES[ann['image_id']] += [ann]
 
     for imgId in imgIds:
-       # print(imgId)
         gts[imgId] = imgToAnnsGTS[imgId]
         res[imgId] = imgToAnnsRES[imgId]
 
@@ -99,6 +100,9 @@ if __name__ == '__main__':
     
     with open('captions_for_metric.json', 'r') as f2:
         res_cap = json.load(f2) 
+        for d in res_cap:
+            d['image_id'] = str(d['image_id'])
+            d['id'] = int(d['id'])
     
     rng = [d['image_id'] for d in res_cap]
     datasetGTS = {
