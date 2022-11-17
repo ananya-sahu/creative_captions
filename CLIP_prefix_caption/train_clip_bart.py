@@ -62,6 +62,8 @@ class ClipCocoDataset(Dataset):
             prefix = prefix.float()
             prefix = prefix / prefix.norm(2, -1)
         return tokens, mask, prefix
+        # write a test - captions of different lengths, dataset should tokenize them and token legth = mask length, 
+        # when decode for gpt2/bart it should decode 
 
     def __init__(self, data_path: str,  prefix_length: int,
                  normalize_prefix=False):
@@ -76,6 +78,7 @@ class ClipCocoDataset(Dataset):
         captions_raw = all_data["captions"]
         self.image_ids = [caption["image_id"] for caption in captions_raw]
         self.captions = [caption['caption'] for caption in captions_raw]
+        # tokenizer class name - check for bart
         if os.path.isfile(f"{data_path[:-4]}_tokens.pkl"):
             with open(f"{data_path[:-4]}_tokens.pkl", 'rb') as f:
                 self.captions_tokens, self.caption2embedding, self.max_seq_len = pickle.load(f)
@@ -237,7 +240,6 @@ class TransformerMapper(nn.Module):
 class ClipCaptionModel(nn.Module):
 
     def get_dummy_token(self, batch_size: int, device: torch.device) -> torch.Tensor:
-        print(batch_size)
         return torch.zeros(batch_size, self.prefix_length, dtype=torch.int64, device=device)
 
     #changed
@@ -255,9 +257,11 @@ class ClipCaptionModel(nn.Module):
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
-        print(decoder_input_ids.shape)
-        print(mask.shape)
-        print(prefix_projections.shape)
+        print(decoder_input_ids.shape) # torch.Size([40, 19])
+        print(mask.shape) # torch.Size([40, 29])
+        print(prefix_projections.shape) # torch.Size([40, 10, 768])
+        print(batch_size)
+        print(self.prefix_length.shape)
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
