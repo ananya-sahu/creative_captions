@@ -258,7 +258,7 @@ class ClipCaptionModel(nn.Module):
             input_ids=decoder_input_ids,
             encoder_hidden_states=prefix_projections,
             encoder_attention_mask=torch.ones(batch_size, 1),
-            head_mask=mask
+            decoder_attention_mask=mask
         )
         return out
 
