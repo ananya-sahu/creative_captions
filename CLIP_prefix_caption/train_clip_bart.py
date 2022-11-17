@@ -260,16 +260,18 @@ class ClipCaptionModel(nn.Module):
         print(decoder_input_ids.shape) # torch.Size([40, 19])
         print(mask.shape) # torch.Size([40, 29])
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
-        print(batch_size)
-        print(self.prefix_length)
-        x = torch.ones(batch_size, self.prefix_length)
-        print(x.shape)
+        print(batch_size) # 40
+        print(self.prefix_length) # 10
+        x = torch.ones(batch_size, self.prefix_length) # 40 x 10
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, self.prefix_length)
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length), # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
+            past_key_values = self.prefix_length 
         )
+        # expanded attention mask is torch.Size([40, 1, 19, 29])
+        # combined attention mask is torch.Size([40, 1, 19, 19]) -- need to change 19 to 29
         return out
 
 
