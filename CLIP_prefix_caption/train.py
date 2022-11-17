@@ -225,11 +225,10 @@ class ClipCaptionModel(nn.Module):
     def forward(self, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         embedding_text = self.gpt.transformer.wte(tokens)
-        print(self.prefix_length)
-        print(self.gpt_embedding_size)
+        #print(self.prefix_length)
+        #print(self.gpt_embedding_size)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
-        print(prefix_projections)
-        print(prefix_projections.size())
+        print(mask.shape)
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
@@ -315,9 +314,9 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
             model.zero_grad()
             tokens, mask, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
-            print(tokens.size())
-            print(mask.size())
-            print(prefix.size())
+            #print(tokens.size())
+            #print(mask.size())
+            #print(prefix.size())
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
