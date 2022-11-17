@@ -228,7 +228,7 @@ class ClipCaptionModel(nn.Module):
         #print(self.prefix_length)
         #print(self.gpt_embedding_size)
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.gpt_embedding_size)
-        print(tokens.shape)
+        print(tokens.shape) # torch.Size([40, 21])
         print(mask.shape) # torch.Size([40, 31])
         embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
         if labels is not None:
