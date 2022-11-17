@@ -244,8 +244,8 @@ class ClipCaptionModel(nn.Module):
     def forward(self, batch_size: int, tokens: torch.Tensor, prefix: torch.Tensor, mask: Optional[torch.Tensor] = None,
                 labels: Optional[torch.Tensor] = None):
         
-        print(prefix.shape)
-        print(self.clip_project(prefix).size())
+        print(prefix.shape) 
+        print(self.clip_project(prefix).size()) # torch.Size([40, 7680])
         prefix_projections = self.clip_project(prefix).view(-1, self.prefix_length, self.bart_embedding_size) # prefix_projections should be ([40, 10, 768])
         
         if labels is not None:
@@ -258,7 +258,7 @@ class ClipCaptionModel(nn.Module):
             input_ids=decoder_input_ids,
             encoder_hidden_states=prefix_projections,
             encoder_attention_mask=torch.ones(batch_size, 1),
-            head_mask=tokens
+            head_mask=mask
         )
         return out
 
