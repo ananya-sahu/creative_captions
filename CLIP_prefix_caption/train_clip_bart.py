@@ -256,9 +256,9 @@ class ClipCaptionModel(nn.Module):
             )
         out = self.bart(
             input_ids=decoder_input_ids,
+            attention_mask=mask,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, 1),
-            decoder_attention_mask=mask
+            encoder_attention_mask=torch.ones(batch_size, 1)
         )
         return out
 
