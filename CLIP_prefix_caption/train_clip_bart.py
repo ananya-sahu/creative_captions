@@ -297,8 +297,7 @@ class ClipCaptionModel(nn.Module):
         # Use a two-layer MLP to encode the prefix
         prefix_tokens = self.embedding(prefix.type(torch.LongTensor).to(tokens.device))
         past_key_values = self.trans(prefix_tokens)
-        
-        past_key_values = self.prefix_encoder(prefix_tokens)
+
         past_key_values = past_key_values.view(
             batch_size,
             self.prefix_length,
