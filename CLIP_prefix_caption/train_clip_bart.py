@@ -313,7 +313,7 @@ class ClipCaptionModel(nn.Module):
         )
         past_key_values = self.dropout(past_key_values)
         past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
-        print(past_key_values.shape)
+        print(past_key_values.shape) # 
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
@@ -333,6 +333,8 @@ class ClipCaptionModel(nn.Module):
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
+        self.prefix_size = prefix_size
+        self.num_layers = num_layers
         #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
         # edit - Aditi
         self.bart = BartDecoder.from_pretrained("facebook/bart-base")
