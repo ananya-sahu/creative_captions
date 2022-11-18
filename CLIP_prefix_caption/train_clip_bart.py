@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from enum import Enum
 from transformers import BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
 from transformers.models.bart.modeling_bart import BartDecoder
+from .prefix_encoder import PrefixEncoder
 from tqdm import tqdm
 import os
 import pickle
@@ -263,13 +264,25 @@ class ClipCaptionModel(nn.Module):
         print(batch_size) # 40
         print(self.prefix_length) # 10
         x = torch.ones(batch_size, self.prefix_length) # 40 x 10
+        prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
+        past_key_values = self.prefix_encoder(prefix_tokens)
+        past_key_values = past_key_values.view(
+            batch_size,
+            self.prefix_length,
+            self.n_layer * 2, 
+            self.n_head,
+            self.n_embd
+        )
+        past_key_values = self.dropout(past_key_values)
+        past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, self.prefix_length) # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
-            #past_key_values = tuple(tuple(torch.ones(batch_size, self.prefix_length)))
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length), # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
+            past_key_values = past_key_values
         )
+        # ((), torch.ones(batch_size, 1, self.prefix_length, 1), torch.ones(batch_size, 1, self.prefix_length, 1))
         # expanded attention mask is torch.Size([40, 1, 19, 29])
         # combined attention mask is torch.Size([40, 1, 19, 19]) -- need to change 19 to 29
         return out
@@ -285,7 +298,13 @@ class ClipCaptionModel(nn.Module):
         # edit - Aditi
         self.bart = BartDecoder.from_pretrained("facebook/bart-base")
         #need to fix 
+        self.prefix_tokens = torch.arange(self.prefix_length).long()
         self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
+        self.n_layers = self.bart.config.n_layers
+        self.n_head = self.bart.config.num_attention_heads
+        self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
+        self.prefix_encoder = PrefixEncoder(self.bart.config)
+        self.dropout = torch.nn.Dropout(self.bart.config.hidden_dropout_prob)
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
