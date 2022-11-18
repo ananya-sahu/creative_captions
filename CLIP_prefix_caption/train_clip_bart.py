@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from enum import Enum
 from transformers import BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
 from transformers.models.bart.modeling_bart import BartDecoder
-from .prefix_encoder import PrefixEncoder
+from CLIP_prefix_caption.prefix_encoder import PrefixEncoder
 from tqdm import tqdm
 import os
 import pickle
