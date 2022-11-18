@@ -292,11 +292,29 @@ class ClipCaptionModel(nn.Module):
         print(self.prefix_length) # 10
         x = torch.ones(batch_size, self.prefix_length) # 40 x 10
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
+
+        if prefix_projections:
+            # Use a two-layer MLP to encode the prefix
+            self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
+            self.trans = torch.nn.Sequential(
+                torch.nn.Linear(self.bart.config.hidden_size, self.prefix_size),
+                torch.nn.Tanh(),
+                torch.nn.Linear(self.prefix_size, self.num_layers * 2 * self.bart.config.hidden_size)
+            )
+        else:
+            self.embedding = torch.nn.Embedding(self.prefix_length, self.n_layers * 2 * self.bart.config.hidden_size)
+
+        if prefix_projections:
+            prefix_tokens = self.embedding(prefix)
+            past_key_values = self.trans(prefix_tokens)
+        else:
+            past_key_values = self.embedding(prefix)
+        
         past_key_values = self.prefix_encoder(prefix_tokens)
         past_key_values = past_key_values.view(
             batch_size,
             self.prefix_length,
-            self.n_layer * 2, 
+            self.n_layers * 2, 
             self.n_head,
             self.n_embd
         )
@@ -328,10 +346,10 @@ class ClipCaptionModel(nn.Module):
         self.prefix_tokens = torch.arange(self.prefix_length).long()
         self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
         self.n_layers = self.bart.config.num_hidden_layers
-        self.n_head = self.bart.config.num_attention_heads
+        self.n_head = self.bart.config.encoder_attention_heads
         self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
-        self.prefix_encoder = PrefixEncoder(self.bart.config)
-        self.dropout = torch.nn.Dropout(self.bart.config.hidden_dropout_prob)
+        # self.prefix_encoder = 
+        self.dropout = self.bart.config.dropout
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
