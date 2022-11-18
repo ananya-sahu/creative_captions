@@ -327,7 +327,7 @@ class ClipCaptionModel(nn.Module):
         #need to fix 
         self.prefix_tokens = torch.arange(self.prefix_length).long()
         self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
-        self.n_layers = self.bart.config.n_layers
+        self.n_layers = self.bart.config.num_hidden_layers
         self.n_head = self.bart.config.num_attention_heads
         self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
         self.prefix_encoder = PrefixEncoder(self.bart.config)
