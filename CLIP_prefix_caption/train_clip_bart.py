@@ -290,25 +290,18 @@ class ClipCaptionModel(nn.Module):
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
         print(batch_size) # 40
         print(self.prefix_length) # 10
-        x = torch.ones(batch_size, self.prefix_length) # 40 x 10
+        # x = torch.ones(batch_size, self.prefix_length) # 40 x 10
+        
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
-
-        if prefix_projections:
-            # Use a two-layer MLP to encode the prefix
-            self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
-            self.trans = torch.nn.Sequential(
-                torch.nn.Linear(self.bart.config.hidden_size, self.prefix_size),
-                torch.nn.Tanh(),
-                torch.nn.Linear(self.prefix_size, self.num_layers * 2 * self.bart.config.hidden_size)
-            )
-        else:
-            self.embedding = torch.nn.Embedding(self.prefix_length, self.n_layers * 2 * self.bart.config.hidden_size)
-
-        if prefix_projections:
-            prefix_tokens = self.embedding(prefix)
-            past_key_values = self.trans(prefix_tokens)
-        else:
-            past_key_values = self.embedding(prefix)
+        # Use a two-layer MLP to encode the prefix
+        self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
+        self.trans = torch.nn.Sequential(
+            torch.nn.Linear(self.bart.config.hidden_size, self.prefix_size),
+            torch.nn.Tanh(),
+            torch.nn.Linear(self.prefix_size, self.num_layers * 2 * self.bart.config.hidden_size)
+        )
+        prefix_tokens = self.embedding(prefix)
+        past_key_values = self.trans(prefix_tokens)
         
         past_key_values = self.prefix_encoder(prefix_tokens)
         past_key_values = past_key_values.view(
@@ -320,6 +313,7 @@ class ClipCaptionModel(nn.Module):
         )
         past_key_values = self.dropout(past_key_values)
         past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
+        print(past_key_values.shape)
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
