@@ -281,10 +281,11 @@ class ClipCaptionModel(nn.Module):
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
-        print(tokens.shape)
+        
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
+        print(tokens.device)
         print(decoder_input_ids.shape) # torch.Size([40, 19])
         print(mask.shape) # torch.Size([40, 29])
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
