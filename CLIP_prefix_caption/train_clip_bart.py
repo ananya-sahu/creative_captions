@@ -294,13 +294,7 @@ class ClipCaptionModel(nn.Module):
         
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
         # Use a two-layer MLP to encode the prefix
-        self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
-        self.trans = torch.nn.Sequential(
-            torch.nn.Linear(self.bart.config.hidden_size, self.prefix_size),
-            torch.nn.Tanh(),
-            torch.nn.Linear(self.prefix_size, self.num_layers * 2 * self.bart.config.hidden_size)
-        )
-        prefix_tokens = self.embedding(prefix)
+        prefix_tokens = self.embedding(prefix.type(torch.LongTensor))
         past_key_values = self.trans(prefix_tokens)
         
         past_key_values = self.prefix_encoder(prefix_tokens)
@@ -333,8 +327,6 @@ class ClipCaptionModel(nn.Module):
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.prefix_size = prefix_size
-        self.num_layers = num_layers
         #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
         # edit - Aditi
         self.bart = BartDecoder.from_pretrained("facebook/bart-base")
@@ -346,6 +338,12 @@ class ClipCaptionModel(nn.Module):
         self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
         # self.prefix_encoder = 
         self.dropout = self.bart.config.dropout
+        self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
+        self.trans = torch.nn.Sequential(
+            torch.nn.Linear(self.bart.config.hidden_size, prefix_size),
+            torch.nn.Tanh(),
+            torch.nn.Linear(prefix_size, num_layers * 2 * self.bart.config.hidden_size)
+        )
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
