@@ -285,7 +285,7 @@ class ClipCaptionModel(nn.Module):
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
-        print(tokens.device)
+        print(tokens.shape)
         print(decoder_input_ids.shape) # torch.Size([40, 19])
         print(mask.shape) # torch.Size([40, 29])
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
@@ -295,7 +295,7 @@ class ClipCaptionModel(nn.Module):
         
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
         # Use a two-layer MLP to encode the prefix
-        prefix_tokens = self.embedding(prefix.type(torch.LongTensor).to(self.bart.device('cuda:0')))
+        prefix_tokens = self.embedding(prefix.type(torch.LongTensor).to(tokens.device))
         past_key_values = self.trans(prefix_tokens)
         
         past_key_values = self.prefix_encoder(prefix_tokens)
