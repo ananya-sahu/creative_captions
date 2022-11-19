@@ -292,7 +292,7 @@ class ClipCaptionModel(nn.Module):
         print(batch_size) # 40
         print(self.prefix_length) # 10
         # x = torch.ones(batch_size, self.prefix_length) # 40 x 10
-        
+        """
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
         # Use a two-layer MLP to encode the prefix
         prefix_tokens = self.embedding(prefix.type(torch.LongTensor).to(tokens.device))
@@ -308,12 +308,13 @@ class ClipCaptionModel(nn.Module):
         past_key_values = self.dropout(past_key_values)
         past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
         print(past_key_values.shape) # 
+        """
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, self.prefix_length), # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
-            past_key_values = past_key_values
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length) # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
+            #past_key_values = past_key_values
         )
         # ((), torch.ones(batch_size, 1, self.prefix_length, 1), torch.ones(batch_size, 1, self.prefix_length, 1))
         # expanded attention mask is torch.Size([40, 1, 19, 29])
