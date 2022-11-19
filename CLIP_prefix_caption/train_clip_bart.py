@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import BartTokenizer,BartModel, AdamW, get_linear_schedule_with_warmup
+from transformers import BartTokenizer,BartForConditionalGeneration,BartModel, AdamW, get_linear_schedule_with_warmup
 from transformers.models.bart.modeling_bart import BartDecoder
 from tqdm import tqdm
 import os
@@ -285,19 +285,19 @@ class ClipCaptionModel(nn.Module):
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
-        print(tokens.shape) # torch.Size([40, 21])
-        print(decoder_input_ids.shape) # torch.Size([40, 21])
-        print(mask.shape) # torch.Size([40, 31])
-        print(prefix_projections.shape) # torch.Size([40, 10, 768])
-        print(batch_size) # 40
-        print(self.prefix_length) # 10
-        # x = torch.ones(batch_size, self.prefix_length) # 40 x 10
-        
+        #print(tokens.shape) # torch.Size([40, 21])
+        #print(decoder_input_ids.shape) # torch.Size([40, 21])
+        #print(mask.shape) # torch.Size([40, 31])
+        #print(prefix_projections.shape) # torch.Size([40, 10, 768])
+        #print(batch_size) # 40
+        #print(self.prefix_length) # 10
+        x = torch.ones(batch_size, self.prefix_length) # 40 x 10
+        #print(x.shape)
         out = self.bart(
             input_ids=decoder_input_ids,
             attention_mask=mask,
             encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, self.prefix_length) # attention mask is being expanded from [40 x 10] to [40 x 1 x 21 x 31] ?
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length).to(tokens.device) # attention mask is being expanded from [40 x 10] to [40 x 1 x 21 x 31] ?
             #past_key_values = past_key_values
         )
         """
@@ -420,8 +420,16 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
         progress = tqdm(total=len(train_dataloader), desc=output_prefix)
         for idx, (tokens, mask, prefix) in enumerate(train_dataloader):
             model.zero_grad()
-            tokens, mask, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
-            
+            tokens, _, prefix = tokens.to(device), mask.to(device), prefix.to(device, dtype=torch.float32)
+            mask = torch.ones(tokens.shape).to(device)
+            #print(prefix.shape)
+            #print(mask.shape)
+            #print(tokens.shape)
+            """
+            torch.Size([40, 512])
+            torch.Size([40, 31])
+            torch.Size([40, 21])
+            """
             outputs = model(batch_size, tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
