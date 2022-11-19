@@ -285,14 +285,27 @@ class ClipCaptionModel(nn.Module):
         decoder_input_ids = shift_tokens_right(
                 tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
             )
-        print(tokens.shape)
-        print(decoder_input_ids.shape) # torch.Size([40, 19])
-        print(mask.shape) # torch.Size([40, 29])
+        print(tokens.shape) # torch.Size([40, 21])
+        print(decoder_input_ids.shape) # torch.Size([40, 21])
+        print(mask.shape) # torch.Size([40, 31])
         print(prefix_projections.shape) # torch.Size([40, 10, 768])
         print(batch_size) # 40
         print(self.prefix_length) # 10
         # x = torch.ones(batch_size, self.prefix_length) # 40 x 10
+        
+        out = self.bart(
+            input_ids=decoder_input_ids,
+            attention_mask=mask,
+            encoder_hidden_states=prefix_projections,
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length) # attention mask is being expanded from [40 x 10] to [40 x 1 x 21 x 31] ?
+            #past_key_values = past_key_values
+        )
         """
+        # expanded attn mask: torch.Size([40, 1, 21, 31])
+        #input.shape[-1]: 21
+        # combined attn mask: torch.Size([40, 1, 21, 31])
+
+        
         prefix_tokens = self.prefix_tokens.unsqueeze(0).expand(batch_size, -1)
         # Use a two-layer MLP to encode the prefix
         prefix_tokens = self.embedding(prefix.type(torch.LongTensor).to(tokens.device))
@@ -309,16 +322,7 @@ class ClipCaptionModel(nn.Module):
         past_key_values = past_key_values.permute([2, 0, 3, 1, 4]).split(2)
         print(past_key_values.shape) # 
         """
-        out = self.bart(
-            input_ids=decoder_input_ids,
-            attention_mask=mask,
-            encoder_hidden_states=prefix_projections,
-            encoder_attention_mask=torch.ones(batch_size, self.prefix_length) # attention mask is being expanded from [40 x 10] to [40 x 1 x 29 x 19] ?
-            #past_key_values = past_key_values
-        )
-        # ((), torch.ones(batch_size, 1, self.prefix_length, 1), torch.ones(batch_size, 1, self.prefix_length, 1))
-        # expanded attention mask is torch.Size([40, 1, 19, 29])
-        # combined attention mask is torch.Size([40, 1, 19, 19]) -- need to change 19 to 29
+       
         return out
 
 
@@ -330,7 +334,7 @@ class ClipCaptionModel(nn.Module):
         self.prefix_length = prefix_length
         #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
         # edit - Aditi
-        self.bart = BartDecoder.from_pretrained("facebook/bart-base")
+        self.bart = BartDecoder.from_pretrained("facebook/bart-base", use_cache=False)
         #need to fix 
         self.prefix_tokens = torch.arange(self.prefix_length).long()
         self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
