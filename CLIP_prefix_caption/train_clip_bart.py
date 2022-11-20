@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
 from enum import Enum
-from transformers import BartTokenizer,BartForConditionalGeneration,BartModel, AdamW, get_linear_schedule_with_warmup
+from transformers import BartTokenizer,BartForCausalLM,BartModel, AdamW, get_linear_schedule_with_warmup
 from transformers.models.bart.modeling_bart import BartDecoder
 from tqdm import tqdm
 import os
@@ -298,7 +298,6 @@ class ClipCaptionModel(nn.Module):
             attention_mask=mask,
             encoder_hidden_states=prefix_projections,
             encoder_attention_mask=torch.ones(batch_size, self.prefix_length).to(tokens.device) # attention mask is being expanded from [40 x 10] to [40 x 1 x 21 x 31] ?
-            #past_key_values = past_key_values
         )
         """
         # expanded attn mask: torch.Size([40, 1, 21, 31])
@@ -325,30 +324,28 @@ class ClipCaptionModel(nn.Module):
        
         return out
 
-
-
     #changed 
     def __init__(self, prefix_length: int, clip_length: Optional[int] = None, prefix_size: int = 512,
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        #self.bart = BartDecoder.from_pretrained('facebook/bart-large').model.decoder #BartForConditionalGeneration.from_pretrained('facebook/bart-large')
-        # edit - Aditi
-        self.bart = BartDecoder.from_pretrained("facebook/bart-base", use_cache=False)
+        self.bart = BartForCausalLM.from_pretrained("facebook/bart-base", use_cache=False)
         #need to fix 
         self.prefix_tokens = torch.arange(self.prefix_length).long()
-        self.bart_embedding_size = self.bart.embed_tokens.weight.shape[1]
-        self.n_layers = self.bart.config.num_hidden_layers
-        self.n_head = self.bart.config.encoder_attention_heads
-        self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
+        self.bart_embedding_size = self.bart.get_input_embeddings.weight.shape[1]
+        #self.n_layers = self.bart.config.num_hidden_layers
+        #self.n_head = self.bart.config.encoder_attention_heads
+        #self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
         # self.prefix_encoder = 
-        self.dropout = self.bart.config.dropout
-        self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
+        #self.dropout = self.bart.config.dropout
+        #self.embedding = torch.nn.Embedding(self.prefix_length, self.bart.config.hidden_size)
+        """
         self.trans = torch.nn.Sequential(
             torch.nn.Linear(self.bart.config.hidden_size, prefix_size),
             torch.nn.Tanh(),
             torch.nn.Linear(prefix_size, num_layers * 2 * self.bart.config.hidden_size)
         )
+        """
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.bart_embedding_size * prefix_length) // 2,
                                      self.bart_embedding_size * prefix_length))
