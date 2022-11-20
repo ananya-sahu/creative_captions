@@ -19,7 +19,6 @@ from transformers import (
 import skimage.io as io
 import PIL.Image
 
-import cog
 
 N = type(None)
 V = np.array
@@ -58,55 +57,6 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
 
     return shifted_input_ids
     
-class Predictor(cog.Predictor):
-    def setup(self):
-        """Load the model into memory to make running multiple predictions efficient"""
-        self.device = torch.device("cuda")
-        self.clip_model, self.preprocess = clip.load(
-            "ViT-B/32", device=self.device, jit=False
-         )
-        self.tokenizer = BartTokenizer.from_pretrained("facebook/bart-large")
-
-        self.models = {}
-        self.prefix_length = 10
-        for key, weights_path in WEIGHTS_PATHS.items():
-            model = ClipCaptionModel(self.prefix_length)
-            model.load_state_dict(torch.load(weights_path, map_location=CPU))
-            model = model.eval()
-            model = model.to(self.device)
-            self.models[key] = model
-
-    @cog.input("image", type=cog.Path, help="Input image")
-    @cog.input(
-        "model",
-        type=str,
-        options=WEIGHTS_PATHS.keys(),
-        default="coco",
-        help="Model to use",
-    )
-    @cog.input(
-        "use_beam_search",
-        type=bool,
-        default=False,
-        help="Whether to apply beam search to generate the output text",
-    )
-    def predict(self, image, model, use_beam_search):
-        """Run a single prediction on the model"""
-        image = io.imread(image)
-        model = self.models[model]
-        pil_image = PIL.Image.fromarray(image)
-        image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            prefix = self.clip_model.encode_image(image).to(
-                self.device, dtype=torch.float32
-            )
-            prefix_embed = model.clip_project(prefix).reshape(1, self.prefix_length, -1)
-        if use_beam_search:
-            return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
-        else:
-            return generate2(model, self.tokenizer, embed=prefix_embed)
-
-
 class MLP(nn.Module):
     def forward(self, x: T) -> T:
         return self.model(x)
@@ -210,7 +160,7 @@ def generate_beam(
             if tokens is None:
                 tokens = torch.tensor(tokenizer.encode(prompt))
                 tokens = tokens.unsqueeze(0).to(device)
-                generated = model.bart.model.shared(tokens)
+                generated = model.bart.model.decoder.embed_tokens(tokens)
         for i in range(entry_length):
             outputs = model.bart(inputs_embeds=generated, decoder_inputs_embeds=generated)
             logits = outputs.logits
@@ -243,7 +193,7 @@ def generate_beam(
                 generated = generated[next_tokens_source]
                 scores = scores_sum_average * seq_lengths
                 is_stopped = is_stopped[next_tokens_source]
-            next_token_embed = model.bart.model.shared(next_tokens.squeeze()).view(
+            next_token_embed = model.bart.model.decoder.embed_tokens(next_tokens.squeeze()).view(
                 generated.shape[0], 1, -1
             )
             generated = torch.cat((generated, next_token_embed), dim=1)
@@ -290,11 +240,11 @@ def generate2(
                     tokens = torch.tensor(tokenizer.encode(prompt))
                     tokens = tokens.unsqueeze(0).to(device)
 
-                generated = model.bart.model.shared(tokens)
+                generated = model.bart.model.decoder.embed_tokens(tokens)
 
             for i in range(entry_length):
 
-                outputs = model.bart(inputs_embeds=generated, decoder_inputs_embeds=generated)
+                outputs = model.bart(input_ids=generated)
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
                 sorted_logits, sorted_indices = torch.sort(logits, descending=True)
@@ -310,7 +260,7 @@ def generate2(
                 indices_to_remove = sorted_indices[sorted_indices_to_remove]
                 logits[:, indices_to_remove] = filter_value
                 next_token = torch.argmax(logits, -1).unsqueeze(0)
-                next_token_embed = model.bart.model.shared(next_token)
+                next_token_embed = model.bart.model.decoder.embed_tokens(next_token)
                 if tokens is None:
                     tokens = next_token
                 else:
