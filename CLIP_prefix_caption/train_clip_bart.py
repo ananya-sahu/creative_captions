@@ -428,11 +428,11 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
             torch.Size([40, 21])
             """
             outputs = model(batch_size, tokens, prefix, mask)
-            logits = outputs.logits[:, dataset.prefix_length - 1: -1]
-            print(logits.shape)
-            print(logits.reshape(-1, logits.shape[-1]).shape)
-            print(tokens.flatten().shape)
-            print(tokens.shape)
+            logits = outputs.logits[:, :]
+            print(logits.shape) # torch.Size([40, 11, 50265]) -- needs to be 40 x 21
+            print(logits.reshape(-1, logits.shape[-1]).shape) # torch.Size([440, 50265])
+            print(tokens.flatten().shape) # torch.Size([840])
+            print(tokens.shape) # torch.Size([40, 21])
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0) 
             loss.backward()
             optimizer.step()
