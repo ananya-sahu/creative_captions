@@ -332,7 +332,7 @@ class ClipCaptionModel(nn.Module):
         self.bart = BartForCausalLM.from_pretrained("facebook/bart-base", use_cache=False)
         #need to fix 
         self.prefix_tokens = torch.arange(self.prefix_length).long()
-        self.bart_embedding_size = self.bart.get_input_embeddings.weight.shape[1]
+        self.bart_embedding_size = self.bart.model.decoder.embed_tokens.weight.shape[1]
         #self.n_layers = self.bart.config.num_hidden_layers
         #self.n_head = self.bart.config.encoder_attention_heads
         #self.n_embd = self.bart.config.hidden_size // self.bart.config.num_attention_heads
