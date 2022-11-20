@@ -11,6 +11,7 @@ import sys
 from typing import Tuple, List, Union, Optional
 from transformers import (
     BartForConditionalGeneration, 
+    BartForCausalLM,
     BartTokenizer,
     AdamW,
     get_linear_schedule_with_warmup,
@@ -42,54 +43,68 @@ WEIGHTS_PATHS = {
 D = torch.device
 CPU = torch.device("cpu")
 
+def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start_token_id: int):
+    """
+    Shift input ids one token to the right.
+    """
+    shifted_input_ids = input_ids.new_zeros(input_ids.shape)
+    shifted_input_ids[:, 1:] = input_ids[:, :-1].clone()
+    shifted_input_ids[:, 0] = decoder_start_token_id
 
-# class Predictor(cog.Predictor):
-#     def setup(self):
-#         """Load the model into memory to make running multiple predictions efficient"""
-#         self.device = torch.device("cuda")
-#         self.clip_model, self.preprocess = clip.load(
-#             "ViT-B/32", device=self.device, jit=False
-#         )
-#         self.tokenizer = BartTokenizer.from_pretrained("facebook/bart-large")
+    if pad_token_id is None:
+        raise ValueError("self.model.config.pad_token_id has to be defined.")
+    # replace possible -100 values in labels by `pad_token_id`
+    shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
 
-#         self.models = {}
-#         self.prefix_length = 10
-#         for key, weights_path in WEIGHTS_PATHS.items():
-#             model = ClipCaptionModel(self.prefix_length)
-#             model.load_state_dict(torch.load(weights_path, map_location=CPU))
-#             model = model.eval()
-#             model = model.to(self.device)
-#             self.models[key] = model
+    return shifted_input_ids
+    
+class Predictor(cog.Predictor):
+    def setup(self):
+        """Load the model into memory to make running multiple predictions efficient"""
+        self.device = torch.device("cuda")
+        self.clip_model, self.preprocess = clip.load(
+            "ViT-B/32", device=self.device, jit=False
+         )
+        self.tokenizer = BartTokenizer.from_pretrained("facebook/bart-large")
 
-#     @cog.input("image", type=cog.Path, help="Input image")
-#     @cog.input(
-#         "model",
-#         type=str,
-#         options=WEIGHTS_PATHS.keys(),
-#         default="coco",
-#         help="Model to use",
-#     )
-#     @cog.input(
-#         "use_beam_search",
-#         type=bool,
-#         default=False,
-#         help="Whether to apply beam search to generate the output text",
-#     )
-#     def predict(self, image, model, use_beam_search):
-#         """Run a single prediction on the model"""
-#         image = io.imread(image)
-#         model = self.models[model]
-#         pil_image = PIL.Image.fromarray(image)
-#         image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
-#         with torch.no_grad():
-#             prefix = self.clip_model.encode_image(image).to(
-#                 self.device, dtype=torch.float32
-#             )
-#             prefix_embed = model.clip_project(prefix).reshape(1, self.prefix_length, -1)
-#         if use_beam_search:
-#             return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
-#         else:
-#             return generate2(model, self.tokenizer, embed=prefix_embed)
+        self.models = {}
+        self.prefix_length = 10
+        for key, weights_path in WEIGHTS_PATHS.items():
+            model = ClipCaptionModel(self.prefix_length)
+            model.load_state_dict(torch.load(weights_path, map_location=CPU))
+            model = model.eval()
+            model = model.to(self.device)
+            self.models[key] = model
+
+    @cog.input("image", type=cog.Path, help="Input image")
+    @cog.input(
+        "model",
+        type=str,
+        options=WEIGHTS_PATHS.keys(),
+        default="coco",
+        help="Model to use",
+    )
+    @cog.input(
+        "use_beam_search",
+        type=bool,
+        default=False,
+        help="Whether to apply beam search to generate the output text",
+    )
+    def predict(self, image, model, use_beam_search):
+        """Run a single prediction on the model"""
+        image = io.imread(image)
+        model = self.models[model]
+        pil_image = PIL.Image.fromarray(image)
+        image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            prefix = self.clip_model.encode_image(image).to(
+                self.device, dtype=torch.float32
+            )
+            prefix_embed = model.clip_project(prefix).reshape(1, self.prefix_length, -1)
+        if use_beam_search:
+            return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
+        else:
+            return generate2(model, self.tokenizer, embed=prefix_embed)
 
 
 class MLP(nn.Module):
@@ -115,26 +130,37 @@ class ClipCaptionModel(nn.Module):
         )
 
     def forward(
-        self, tokens: T, prefix: T, mask: Optional[T] = None, labels: Optional[T] = None
+        self, batch_size: int, tokens: T, prefix: T, mask: Optional[T] = None, labels: Optional[T] = None
     ):
-        embedding_text = self.bart.model.shared(tokens)
+        self.prefix_tokens = torch.arange(self.prefix_length).long()
+        self.bart_embedding_size = self.bart.model.decoder.embed_tokens.weight.shape[1]
+       
+        # embedding_text = self.bart.model.shared(tokens) self.bart.model.decoder.embed_tokens.weight.shape[1]
         prefix_projections = self.clip_project(prefix).view(
             -1, self.prefix_length, self.bart_embedding_size
         )
         # print(embedding_text.size()) #torch.Size([5, 67, 768])
         # print(prefix_projections.size()) #torch.Size([5, 1, 768])
-        embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
+        # embedding_cat = torch.cat((prefix_projections, embedding_text), dim=1)
+        decoder_input_ids = shift_tokens_right(
+                tokens, self.bart.config.pad_token_id, self.bart.config.decoder_start_token_id
+            )
+        """
         if labels is not None:
             dummy_token = self.get_dummy_token(tokens.shape[0], tokens.device)
             labels = torch.cat((dummy_token, tokens), dim=1)
-        out = self.bart(inputs_embeds=embedding_cat, decoder_inputs_embeds=embedding_cat, labels=labels, attention_mask=mask)
+        """
+        out = self.bart(input_ids=decoder_input_ids,
+            attention_mask=mask,
+            encoder_hidden_states=prefix_projections,
+            encoder_attention_mask=torch.ones(batch_size, self.prefix_length).to(tokens.device))
         return out
 
     def __init__(self, prefix_length: int, prefix_size: int = 512):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.bart = BartForConditionalGeneration.from_pretrained("facebook/bart-large")
-        self.bart_embedding_size = self.bart.model.shared.weight.shape[1]
+        self.bart = BartForCausalLM.from_pretrained("facebook/bart-large")
+        self.bart_embedding_size = self.bart.model.decoder.embed_tokens.weight.shape[1]
         if prefix_length > 10:  # not enough memory
             self.clip_project = nn.Linear(
                 prefix_size, self.bart_embedding_size * prefix_length
