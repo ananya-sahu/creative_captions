@@ -56,7 +56,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
 
     return shifted_input_ids
-    
+
 class MLP(nn.Module):
     def forward(self, x: T) -> T:
         return self.model(x)
@@ -277,7 +277,7 @@ def generate2(
 
     #added to not use cog
 def main():
-        image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
+        image = 'CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
         use_beam_search = False
         device = torch.device("cpu")
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
