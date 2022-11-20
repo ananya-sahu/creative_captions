@@ -432,6 +432,7 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
             print(logits.shape)
             print(logits.reshape(-1, logits.shape[-1]).shape)
             print(tokens.flatten().shape)
+            print(tokens.shape)
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0) 
             loss.backward()
             optimizer.step()
