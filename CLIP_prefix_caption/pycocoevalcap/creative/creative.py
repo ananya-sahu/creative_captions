@@ -7,6 +7,7 @@ from .creative_scorer import CreativeScorer
 from collections import defaultdict
 import nltk
 from nltk.corpus import stopwords
+import nltk.tokenize as nt
 nltk.download('stopwords')
 
 
@@ -43,6 +44,22 @@ def diversity(hypo, n_lines=None):
             etp_score[n] += - 1.0 * v /total * (np.log(v) - np.log(total))
 
         return etp_score
+
+#do entity extraction and get number of adjectives per caption 
+def adjectives_per_caption(caption):
+    ss=nt.sent_tokenize(caption)
+    tokenized_sent=[nt.word_tokenize(sent) for sent in ss]
+    pos_sentences=[nltk.pos_tag(sent) for sent in tokenized_sent]
+    pos = pos_sentences[0]
+    count = 0
+    total = 0
+    for tup in pos:
+        if pos[1] == 'JJ':
+            count+=1
+        total +=1 
+    return count/total
+
+
     
 # figurative lang score -- evaluate on given caption
 # classifier separately trained
