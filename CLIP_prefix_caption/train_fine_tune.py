@@ -29,12 +29,11 @@ class torchDataset(Dataset):
 
 def main():
     #just to see if it loads
-    #dataset = load_dataset('csv', data_files='/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/VUA_formatted_train.csv') 
-    #print(len(dataset))
-    dataset = load_dataset('bookcorpus')
+    dataset = load_dataset('csv', data_files={'train': "/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/VUA_formatted_train.csv",'validation': "/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/VUA_validation.csv"}) 
+    print(dataset)
 
-    train_dataset = dataset['train']['text']
-    validation_dataset = dataset['validation']['text']
+    train_dataset = dataset['train']['sentence']
+    validation_dataset = dataset['validation']['sentence_txt']
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     train_encoding = tokenizer(train_dataset, padding=True, truncation=True, max_length=1024, return_tensors='pt')
     eval_encoding = tokenizer(validation_dataset, padding=True, truncation=True, max_length=1024, return_tensors='pt')
