@@ -239,8 +239,9 @@ class ClipCaptionModel(nn.Module):
                  num_layers: int = 8, mapping_type: MappingType = MappingType.MLP):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        #self.gpt = GPT2LMHeadModel.from_pretrained('gpt2') change to the finetuned gpt2
-        self.gpt = GPT2LMHeadModel.from_pretrained('./gpt2finetuned')
+        #load up the finetuned gpt2 
+        self.gpt = GPT2LMHeadModel.from_pretrained('gpt2') #change to the finetuned gpt2
+        self.gpt.load_state_dict(torch.load('./gpt_finetuned'))
         self.gpt_embedding_size = self.gpt.transformer.wte.weight.shape[1]
         if mapping_type == MappingType.MLP:
             self.clip_project = MLP((prefix_size, (self.gpt_embedding_size * prefix_length) // 2,

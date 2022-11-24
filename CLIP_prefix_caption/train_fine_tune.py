@@ -96,8 +96,8 @@ def main():
                 if idx % 50 == 0:
                     print("loss: %f, %d"%(loss, idx))
 
-    PATH = './gpt_finetuned'
-    torch.save(model, PATH)
+    PATH = './gpt_finetuned_weights'
+    torch.save(model.state_dict(), PATH)
 
 
     #end try
