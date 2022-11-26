@@ -350,7 +350,7 @@ def main():
         
         model = ClipCaptionModel(prefix_length)
 
-        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-009.pt'
+        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train_fine_tune/coco_prefix-009.pt'
         model.load_state_dict(torch.load(weights, map_location=CPU))
         model = model.eval()
         model = model.to(device)
@@ -367,13 +367,13 @@ def main():
 
             img_id = d["image_id"]
             imgid = d["id"]
-            filename = f"./data/coco/val2014/COCO_val2014_{int(imgid):012d}.jpg"
+            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
             if os.path.isfile(filename):
                 gen = predict_caption(device,model,filename,use_beam_search,clip_model,preprocess,prefix_length,tokenizer)
-                generated_captions.append({"image_id": imgid, "id": img_id, "caption": gen})
+                generated_captions.append({"image_id": img_id, "id": imgid, "caption": gen})
                 print(gen)
                 print(imgid)
-                with open('captions.json', 'w') as outfile:
+                with open('captions1.json', 'w') as outfile:
                     json.dump(generated_captions, outfile)
         
 

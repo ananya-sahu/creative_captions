@@ -68,9 +68,9 @@ class Fig_Dataset(Dataset):
 
 def main():
     #trying another way 
-    with open("/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/train_vua.csv", "r") as train:
+    with open("./train_vua.csv", "r") as train:
         text = train.readlines()
-    text = text[:51]
+    #text = text[:51]
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     model = GPT2LMHeadModel.from_pretrained("gpt2")
     model = model.to(device)
@@ -82,7 +82,7 @@ def main():
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, drop_last=True)
 
     #model training 
-    epochs = 1 #change to 10 at least 
+    epochs = 10 #change to 10 at least 
     dl = dataloader
     for epoch in range(epochs):
         for idx, batch in enumerate(dl):
