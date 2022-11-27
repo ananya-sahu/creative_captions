@@ -2,8 +2,10 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as nnf
 from torch.utils.data import Dataset, DataLoader
+import random
+import numpy as np
 
-from transformers import GPT2Tokenizer, GPT2LMHeadModel, Trainer, TrainingArguments
+from transformers import GPT2Tokenizer, GPT2LMHeadModel,get_linear_schedule_with_warmup
 
 from typing import Tuple, Optional, Union
 #from datasets import load_dataset
@@ -14,42 +16,25 @@ device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
 
 class Fig_Dataset(Dataset):  
-    def __init__(self, tokenizer, text, max_len):
-        self.max_len = max_len
+    def __init__(self, data, tokenizer, max_length=23):
         self.tokenizer = tokenizer
-        self.eos = self.tokenizer.eos_token
-        self.eos_id = self.tokenizer.eos_token_id
-        self.text = text
-        self.result = []
-        self.extra_length = len(tokenizer.encode(" TL;DR "))
+        self.input_ids = []
+        self.attn_masks = []
+        tokenizer.pad_token=tokenizer.eos_token
+        for i in data:
+            encodings_dict = tokenizer('<BOS>' + i + '<EOS>',
+                                     truncation=True,
+                                     max_length=max_length,
+                                     padding='max_length')
 
-        for text in self.text:
-            # Encode the text using tokenizer.encode(). We add EOS at the end
-            tokenized = self.tokenizer.encode(text + self.eos)
-            
-            # Padding/truncating the encoded sequence to max_len 
-            padded = self.pad_truncate(tokenized)            
-
-            # Creating a tensor and adding to the result
-            self.result.append(torch.tensor(padded))
+            self.input_ids.append(torch.tensor(encodings_dict['input_ids']))
+            self.attn_masks.append(torch.tensor(encodings_dict['attention_mask']))
 
     def __len__(self):
-        return len(self.result)
-
-
-    def __getitem__(self, item):
-        return self.result[item]
-
-    def pad_truncate(self, name):
-        name_length = len(name) - self.extra_length
-        if name_length < self.max_len:
-            difference = self.max_len - name_length
-            result = name + [self.eos_id] * difference
-        elif name_length > self.max_len:
-            result = name[:self.max_len + 3]+[self.eos_id] 
-        else:
-            result = name
-        return result
+        return len(self.input_ids)
+    
+    def __getitem__(self, idx):
+        return self.input_ids[idx], self.attn_masks[idx]
 
 
 
@@ -70,33 +55,76 @@ def main():
     #trying another way 
     with open("./train_vua.csv", "r") as train:
         text = train.readlines()
-    #text = text[:51]
+    text = text[:100]
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     model = GPT2LMHeadModel.from_pretrained("gpt2")
     model = model.to(device)
-    optimizer = optim.AdamW(model.parameters(), lr=3e-4)
-    max_length = 100
+    #optimizer = optim.AdamW(model.parameters(), lr=3e-4)
+    max_length = 23
 
-    dataset = Fig_Dataset(tokenizer, text, max_length)
+    learning_rate = 1e-4
+    eps = 1e-8
+    warmup_steps = 50
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, eps=eps)
+    EPOCHS = 5
+    
+    # create text generation seed prompt
+    RANDOM_SEED = 73
+    torch.cuda.manual_seed_all(RANDOM_SEED)
+    random.seed(RANDOM_SEED)
+    np.random.seed(RANDOM_SEED)
+    torch.manual_seed(RANDOM_SEED)
+    
+    # prompt = "<BOS>"
+    # generated = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0)
+    # generated = generated.to(device)
+
+    dataset = Fig_Dataset(text,tokenizer)
 
     dataloader = DataLoader(dataset, batch_size=32, shuffle=True, drop_last=True)
+    total_steps = len(dataloader) * EPOCHS
+    scheduler = get_linear_schedule_with_warmup(optimizer,
+                                            num_warmup_steps=warmup_steps,
+                                            num_training_steps=total_steps)
 
     #model training 
-    epochs = 10 #change to 10 at least 
-    dl = dataloader
-    for epoch in range(epochs):
-        for idx, batch in enumerate(dl):
-             with torch.set_grad_enabled(True):
-                optimizer.zero_grad()
-                batch = batch.to(device)
-                output = model(batch, labels=batch)
-                loss = output[0]
-                loss.backward()
-                optimizer.step()
-                if idx % 50 == 0:
-                    print("loss: %f, %d"%(loss, idx))
+    print(len(dataloader))
+    for epoch_i in range(0, EPOCHS):
 
-    PATH = './gpt_finetuned_weights'
+        print(f'Epoch {epoch_i + 1} of {EPOCHS}')
+
+      
+        total_train_loss = 0
+        model.train()
+
+        for step, batch in enumerate(dataloader):
+
+            b_input_ids = batch[0].to(device)
+            b_labels = batch[0].to(device)
+            b_masks = batch[1].to(device)
+
+            model.zero_grad()        
+
+            outputs = model(b_input_ids,
+                                        labels=b_labels,
+                                        attention_mask=b_masks,
+                                        token_type_ids=None)
+
+            loss = outputs[0]
+            print(loss)  
+
+            batch_loss = loss.item()
+            total_train_loss += batch_loss
+
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+
+    avg_train_loss = total_train_loss / len(dataloader)       
+  
+    print(f'Average Training Loss: {avg_train_loss}.')
+
+    PATH = './gpt_finetuned_weights.pt'
     torch.save(model.state_dict(), PATH)
 
 
