@@ -56,7 +56,7 @@ def shift_tokens_right(input_ids: torch.Tensor, pad_token_id: int, decoder_start
     shifted_input_ids.masked_fill_(shifted_input_ids == -100, pad_token_id)
 
     return shifted_input_ids
-
+    
 class MLP(nn.Module):
     def forward(self, x: T) -> T:
         return self.model(x)
@@ -241,10 +241,9 @@ def generate2(
                     tokens = tokens.unsqueeze(0).to(device)
 
                 generated = model.bart.model.decoder.embed_tokens(tokens)
-
+                decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             for i in range(entry_length):
-
-                outputs = model.bart(input_ids=generated)
+                outputs = model.bart(input_ids=decoder_input_ids)
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
                 sorted_logits, sorted_indices = torch.sort(logits, descending=True)
