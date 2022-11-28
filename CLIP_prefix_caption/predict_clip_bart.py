@@ -276,7 +276,7 @@ def generate2(
 
     #added to not use cog
 def main():
-        image = 'CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
+        image = 'Images/COCO_val2014_000000060623.jpg'
         use_beam_search = False
         device = torch.device("cpu")
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
