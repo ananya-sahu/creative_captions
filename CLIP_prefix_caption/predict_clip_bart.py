@@ -244,6 +244,7 @@ def generate2(
                 generated = model.bart.model.decoder.embed_tokens(tokens)
                 decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             for i in range(entry_length):
+                print(decoder_input_ids.shape)
                 outputs = model.bart(input_ids=decoder_input_ids.type(torch.LongTensor))
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
