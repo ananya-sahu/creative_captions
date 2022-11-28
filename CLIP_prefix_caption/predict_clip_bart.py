@@ -245,7 +245,7 @@ def generate2(
                 #decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             for i in range(entry_length):
                 #print(decoder_input_ids.shape)
-                outputs = model.bart(input_embeds=generated)
+                outputs = model.bart(inputs_embeds=generated)
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
                 sorted_logits, sorted_indices = torch.sort(logits, descending=True)
