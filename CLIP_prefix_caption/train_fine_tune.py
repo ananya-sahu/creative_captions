@@ -55,7 +55,7 @@ def main():
     #trying another way 
     with open("./train_vua.csv", "r") as train:
         text = train.readlines()
-    text = text[:100]
+    #text = text[:100]
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     model = GPT2LMHeadModel.from_pretrained("gpt2")
     model = model.to(device)
@@ -66,7 +66,7 @@ def main():
     eps = 1e-8
     warmup_steps = 50
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, eps=eps)
-    EPOCHS = 5
+    EPOCHS = 10
     
     # create text generation seed prompt
     RANDOM_SEED = 73
