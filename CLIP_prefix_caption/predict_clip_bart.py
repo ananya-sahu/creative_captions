@@ -235,6 +235,7 @@ def generate2(
         for entry_idx in range(entry_count):
             if embed is not None:
                 generated = embed
+                print(generated.shape)
                 decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             else:
                 if tokens is None:
