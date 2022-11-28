@@ -235,18 +235,17 @@ def generate2(
         for entry_idx in range(entry_count):
             if embed is not None:
                 generated = embed
-                print(generated.shape)
-                decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
+                #decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             else:
                 if tokens is None:
                     tokens = torch.tensor(tokenizer.encode(prompt))
                     tokens = tokens.unsqueeze(0).to(device)
 
                 generated = model.bart.model.decoder.embed_tokens(tokens)
-                decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
+                #decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             for i in range(entry_length):
-                print(decoder_input_ids.shape)
-                outputs = model.bart(input_ids=decoder_input_ids.type(torch.LongTensor))
+                #print(decoder_input_ids.shape)
+                outputs = model.bart(input_embeds=generated)
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
                 sorted_logits, sorted_indices = torch.sort(logits, descending=True)
