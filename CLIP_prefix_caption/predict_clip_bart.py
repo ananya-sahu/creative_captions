@@ -110,7 +110,7 @@ class ClipCaptionModel(nn.Module):
     def __init__(self, prefix_length: int, prefix_size: int = 512):
         super(ClipCaptionModel, self).__init__()
         self.prefix_length = prefix_length
-        self.bart = BartForCausalLM.from_pretrained("facebook/bart-large")
+        self.bart = BartForCausalLM.from_pretrained("facebook/bart-large",  ignore_mismatched_sizes=True)
         self.bart_embedding_size = self.bart.model.decoder.embed_tokens.weight.shape[1]
         if prefix_length > 10:  # not enough memory
             self.clip_project = nn.Linear(
@@ -306,7 +306,7 @@ def main():
     model = ClipCaptionModel(prefix_length)
 
     weights = 'CLIP_prefix_caption/coco_prefix-009.pt'
-    model.load_state_dict(torch.load(weights, map_location=CPU), strict=False)
+    model.load_state_dict(torch.load(weights, map_location=CPU))
     model = model.eval()
     model = model.to(device)
 
