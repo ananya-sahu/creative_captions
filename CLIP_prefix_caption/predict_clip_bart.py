@@ -17,6 +17,7 @@ from transformers import (
     get_linear_schedule_with_warmup,
 )
 import skimage.io as io
+import json
 import PIL.Image
 
 
@@ -245,7 +246,7 @@ def generate2(
                 #decoder_input_ids = shift_tokens_right(generated, model.bart.config.pad_token_id, model.bart.config.decoder_start_token_id)
             for i in range(entry_length):
                 #print(decoder_input_ids.shape)
-                outputs = model.bart(inputs_embeds=generated)
+                outputs = model.bart(input_embeds=generated)
                 logits = outputs.logits
                 logits = logits[:, -1, :] / (temperature if temperature > 0 else 1.0)
                 sorted_logits, sorted_indices = torch.sort(logits, descending=True)
@@ -276,23 +277,8 @@ def generate2(
 
     return generated_list[0]
 
-    #added to not use cog
-def main():
-        image = 'Images/COCO_val2014_000000060623.jpg'
-        use_beam_search = False
-        device = torch.device("cpu")
-        clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-        tokenizer = BartTokenizer.from_pretrained("facebook/bart-large")
-
-
-        prefix_length = 10
-
-        model = ClipCaptionModel(prefix_length)
-        #model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
-        model = model.eval()
-        model = model.to(device)
-
-
+def predict_caption(device,model,image,use_beam_search,clip_model, preprocess,prefix_length,tokenizer):
+    
         image = io.imread(image)
         pil_image = PIL.Image.fromarray(image)
         image = preprocess(pil_image).unsqueeze(0).to(device)
@@ -307,6 +293,44 @@ def main():
             return generate2(model, tokenizer, embed=prefix_embed)
 
 
+#added to not use cog
+def main():
+    use_beam_search = True
+    device = torch.device('cuda:0')
+    clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+    tokenizer = BartTokenizer.from_pretrained("gpt2")
+
+    
+    prefix_length = 10
+    
+    model = ClipCaptionModel(prefix_length)
+
+    weights = 'CLIP_prefix_caption/coco_prefix-009.pt'
+    model.load_state_dict(torch.load(weights, map_location=CPU))
+    model = model.eval()
+    model = model.to(device)
+
+    generated_captions = []
+    #load the validation imgs 
+    with open('./data/coco/annotations/train_caption_filtered.json', 'r') as f:
+        data = json.load(f)
+    
+    for i in range(len(data)): #changed len(data) to 100
+        d = data[i]
+
+        #print(d)
+
+        img_id = d["image_id"]
+        imgid = d["id"]
+        filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+        if os.path.isfile(filename):
+            gen = predict_caption(device,model,filename,use_beam_search,clip_model,preprocess,prefix_length,tokenizer)
+            generated_captions.append({"image_id": img_id, "id": imgid, "caption": gen})
+            print(gen)
+            print(imgid)
+            with open('captions1.json', 'w') as outfile:
+                json.dump(generated_captions, outfile)
+        
 
 if __name__ == '__main__':
-    print(main())
+    main()
