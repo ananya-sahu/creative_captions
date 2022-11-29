@@ -298,7 +298,7 @@ def main():
     use_beam_search = True
     device = torch.device('cuda:0')
     clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
-    tokenizer = BartTokenizer.from_pretrained("gpt2")
+    tokenizer = BartTokenizer.from_pretrained("facebook/bart-base")
 
     
     prefix_length = 10
@@ -312,7 +312,7 @@ def main():
 
     generated_captions = []
     #load the validation imgs 
-    with open('./data/coco/annotations/train_caption_filtered.json', 'r') as f:
+    with open('./data/coco/train_caption_filtered.json', 'r') as f:
         data = json.load(f)
     
     for i in range(len(data)): #changed len(data) to 100
