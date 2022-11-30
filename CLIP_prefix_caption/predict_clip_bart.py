@@ -305,7 +305,7 @@ def main():
     
     model = ClipCaptionModel(prefix_length)
 
-    weights = 'CLIP_prefix_caption/coco_prefix-009.pt'
+    weights = 'coco_prefix-009.pt'
     model.load_state_dict(torch.load(weights, map_location=CPU), strict=False)
     model = model.eval()
     model = model.to(device)
