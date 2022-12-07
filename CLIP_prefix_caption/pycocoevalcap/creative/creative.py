@@ -8,42 +8,50 @@ from collections import defaultdict
 import nltk
 from nltk.corpus import stopwords
 import nltk.tokenize as nt
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+import json
+import string
+from collections import Counter
 nltk.download('stopwords')
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
 
 
-#vocab size method 
-def get_vocab_size(dataset):
-    captions = [d["caption"] for d in dataset]
+def get_vocab_size(caption):
+    """
+    Inputs: A generated caption
+    Returns: Normalized length of the caption
+    """
     cachedStopWords = stopwords.words("english")
-    words_without_stop_words = [
-        [word for word in cap.split()
+    words_without_stop_words = [word for word in caption.split()
             if word not in cachedStopWords]
-        for cap in captions]
-    length = 0
-    for cap in words_without_stop_words:
-      length = length + len(cap)
-    return length
+    unique = Counter(words_without_stop_words).keys()
+    return len(unique) / len(caption)
 
-def diversity(hypo, n_lines=None):
+def diversity(data, n_lines=None):
     etp_score = [0.0,0.0,0.0,0.0]
     counter = [defaultdict(int),defaultdict(int),defaultdict(int),defaultdict(int)]
     i = 0
-    for line in open(hypo, encoding='utf-8'):
-        i += 1
-        words = line.strip('\n').split()
-        for n in range(4):
-            for idx in range(len(words)-n):
-                ngram = ' '.join(words[idx:idx+n+1])
-                counter[n][ngram] += 1
-        if i == n_lines:
-            break
+    with open(data, 'r') as f:
+        dataset = json.load(f)
+        for caption in dataset:
+            i += 1
+            words = caption.strip('\n').split()
+            for n in range(4):
+                for idx in range(len(words)-n):
+                    ngram = ' '.join(words[idx:idx+n+1])
+                    counter[n][ngram] += 1
+            if i == n_lines:
+                break
 
-        for n in range(4):
-            total = sum(counter[n].values())+ 1e-9
-        for v in counter[n].values():
-            etp_score[n] += - 1.0 * v /total * (np.log(v) - np.log(total))
+            for n in range(4):
+                total = sum(counter[n].values())+ 1e-9
+            for v in counter[n].values():
+                etp_score[n] += - 1.0 * v /total * (np.log(v) - np.log(total))
 
         return etp_score
+
 
 #do entity extraction and get number of adjectives per caption 
 def adjectives_per_caption(caption):
@@ -54,16 +62,33 @@ def adjectives_per_caption(caption):
     count = 0
     total = 0
     for tup in pos:
-        if pos[1] == 'JJ':
+        if tup[1] == 'JJ':
             count+=1
         total +=1 
     return count/total
 
+def tf_idf(caption, data):
+    """
+        caption = single caption to be tested
+        data = entire dataset of captions
+    """
+    with open(data, 'r') as f:
+        dataset = json.load(f)
+    corpus = [d["caption"] for d in dataset]
 
-    
-# figurative lang score -- evaluate on given caption
-# classifier separately trained
+    tr_idf_model  = TfidfVectorizer()
+    tf_idf_vector = tr_idf_model.fit_transform(corpus)
+    tf_idf_array = tf_idf_vector.toarray()
 
+    words_set = tr_idf_model.get_feature_names_out()
+    df_tf_idf = pd.DataFrame(tf_idf_array, columns = words_set)
+    cap_tf_idf = 0
+
+    cachedStopWords = stopwords.words("english")
+    words_without_stop_words = [word.translate(str.maketrans('', '', string.punctuation)) for word in caption.split() if word.lower() not in cachedStopWords]
+    for word in words_without_stop_words:
+        cap_tf_idf  += df_tf_idf[word]
+    return cap_tf_idf.sum() / len(cap_tf_idf)
 
 class Creative:
 
