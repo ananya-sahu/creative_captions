@@ -35,22 +35,17 @@ def diversity(data, n_lines=None):
     i = 0
     with open(data, 'r') as f:
         dataset = json.load(f)
-        for caption in dataset:
-            i += 1
-            words = caption.strip('\n').split()
+        corpus = [d["caption"] for d in dataset]
+        for caption in corpus:
             for n in range(4):
-                for idx in range(len(words)-n):
-                    ngram = ' '.join(words[idx:idx+n+1])
+                for idx in range(len(caption)-n):
+                    ngram = ' '.join(caption[idx:idx+n+1])
                     counter[n][ngram] += 1
-            if i == n_lines:
-                break
-
-            for n in range(4):
-                total = sum(counter[n].values())+ 1e-9
+        for n in range(4):
+            total = sum(counter[n].values()) +1e-10
             for v in counter[n].values():
-                etp_score[n] += - 1.0 * v /total * (np.log(v) - np.log(total))
-
-        return etp_score
+                etp_score[n] += - (v+0.0) /total * (np.log(v+0.0) - np.log(total))
+    return etp_score
 
 
 #do entity extraction and get number of adjectives per caption 
@@ -90,43 +85,33 @@ def tf_idf(caption, data):
         cap_tf_idf  += df_tf_idf[word]
     return cap_tf_idf.sum() / len(cap_tf_idf)
 
-class Creative:
+def creative_total(caption, data, weights):
+    a_w = weights[0]
+    f_w = weights[1]
+    d_w = weights[2]
 
-    def __init__(self, test=None, refs=None, n=4):
-        # set cider to sum over 1 to 4-grams
-        self._n = n
+    aggregate = a_w + f_w  + d_w
+    a_w /= aggregate
+    f_w /= aggregate
+    d_w /= aggregate
+
+    score = (d_w * get_vocab_size(caption)) +  (a_w*adjectives_per_caption(caption)) + (f_w * tf_idf(caption,data))
+
+    return score 
+
+
+def main():
+    caption_file = '/content/captions1 (1).json'
+    weights = [(17/20),(1/20),(2/20)] #max vote weights 
+    diversity_score = diversity(captions_data, n_lines=None)
+    with open(caption_file) as json_file:
+        captions_data = json.load(json_file)
+    scores = []
+    for c_dict in captions_data:
+        caption = c_dict["caption"]
+        score = creative_total(caption, caption_file, weights,diversity_score[1]) #normalize 
+        scores.append(score)
     
-    def compute_score(self, gts, res):
-        """
-        Main function to compute creative score
-        :param  hypo_for_image (dict) : dictionary with key <image> and value <tokenized hypothesis / candidate sentence>
-                ref_for_image (dict)  : dictionary with key <image> and value <tokenized reference sentence>
-        :return: creative (float) : computed CREAT score for the corpus 
-        """
-
-
-
-        assert(sorted(gts.keys()) == sorted(res.keys()))
-        imgIds = sorted(gts.keys())
-
-        creative_scorer = CreativeScorer(n=self._n)
-
-        for id in imgIds:
-            hypo = res[id]
-            ref = gts[id]
-
-            # Sanity check.
-            assert(type(hypo) is list)
-            assert(len(hypo) == 1)
-            assert(type(ref) is list)
-            assert(len(ref) >= 1)
-
-            creative_scorer += (hypo[0], ref)
-
-        (score, scores) = creative_scorer.compute_score()
-
-        return score, scores
-
-    def method(self):
-        return "CREAT"
+    print(sum(scores)/len(scores))
+    print(diversity_score)
 
