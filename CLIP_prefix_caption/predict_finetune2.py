@@ -570,8 +570,8 @@ def predict_caption(device,model,image,use_beam_search,clip_model, preprocess,pr
 
 def main():
         use_beam_search = True
-        #device = torch.device('cuda:0')
-        device = torch.device('cpu')
+        device = torch.device('cuda:0')
+        #device = torch.device('cpu')
         #device = torch.device('cuda:0')
         clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
         tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
@@ -585,7 +585,7 @@ def main():
         model = ClipCaptionPrefix(prefix_length, clip_length=10, prefix_size=512,
                                   num_layers=8, mapping_type='transformer')
 
-        weights = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/CLIP_prefix_caption/coco_train/coco_prefix-009.pt'
+        weights = '/home/as5957/creative_captions/CLIP_prefix_caption/coco_train/coco_prefix-007.pt'
         model.load_state_dict(torch.load(weights, map_location=CPU),strict=False)
         model = model.eval()
         model = model.to(device)
