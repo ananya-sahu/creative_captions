@@ -1,9 +1,7 @@
 from os import path as os_path
 import sqlite3
-import ijson
 import math
 import numpy as np
-from .creative_scorer import CreativeScorer
 from collections import defaultdict
 import nltk
 from nltk.corpus import stopwords
@@ -77,13 +75,17 @@ def tf_idf(caption, data):
 
     words_set = tr_idf_model.get_feature_names_out()
     df_tf_idf = pd.DataFrame(tf_idf_array, columns = words_set)
-    cap_tf_idf = 0
+    #cap_tf_idf = 0
+    cap_tf_idf = []
 
     cachedStopWords = stopwords.words("english")
     words_without_stop_words = [word.translate(str.maketrans('', '', string.punctuation)) for word in caption.split() if word.lower() not in cachedStopWords]
     for word in words_without_stop_words:
-        cap_tf_idf  += df_tf_idf[word]
-    return cap_tf_idf.sum() / len(cap_tf_idf)
+        if word in list(df_tf_idf.columns):
+            cap_tf_idf.append(df_tf_idf[word].sum()/len(df_tf_idf))
+    if len(cap_tf_idf) == 0:
+        return 0
+    return sum(cap_tf_idf)
 
 def creative_total(caption, data, weights):
     a_w = weights[0]
@@ -100,16 +102,16 @@ def creative_total(caption, data, weights):
     return score 
 
 
-def main():
-    caption_file = '/content/captions1 (1).json'
+if __name__ == '__main__':
+    caption_file = '../../captions1.json'
     weights = [(17/20),(1/20),(2/20)] #max vote weights 
-    diversity_score = diversity(captions_data, n_lines=None)
     with open(caption_file) as json_file:
         captions_data = json.load(json_file)
+    diversity_score = diversity(caption_file, n_lines=None)
     scores = []
     for c_dict in captions_data:
         caption = c_dict["caption"]
-        score = creative_total(caption, caption_file, weights,diversity_score[1]) #normalize 
+        score = creative_total(caption, caption_file, weights) #normalize 
         scores.append(score)
     
     print(sum(scores)/len(scores))
