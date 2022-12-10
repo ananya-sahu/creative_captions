@@ -109,6 +109,7 @@ if __name__ == '__main__':
         captions_data = json.load(json_file)
     diversity_score = diversity(caption_file, n_lines=None)
     scores = []
+    #comment
     for c_dict in captions_data:
         caption = c_dict["caption"]
         score = creative_total(caption, caption_file, weights) #normalize 
