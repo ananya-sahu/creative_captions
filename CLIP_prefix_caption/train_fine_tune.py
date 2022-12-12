@@ -40,11 +40,11 @@ def main():
     #trying another way 
     with open("./train_vua.csv", "r") as train:
         text = train.readlines()
-    #text = text[:100]
+  
     tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
     model = GPT2LMHeadModel.from_pretrained("gpt2")
     model = model.to(device)
-    #optimizer = optim.AdamW(model.parameters(), lr=3e-4)
+    
     max_length = 23
 
     learning_rate = 1e-4
@@ -60,9 +60,6 @@ def main():
     np.random.seed(RANDOM_SEED)
     torch.manual_seed(RANDOM_SEED)
     
-    # prompt = "<BOS>"
-    # generated = torch.tensor(tokenizer.encode(prompt)).unsqueeze(0)
-    # generated = generated.to(device)
 
     dataset = Fig_Dataset(text,tokenizer)
 
