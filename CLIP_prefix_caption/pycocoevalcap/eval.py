@@ -2,7 +2,6 @@ from .tokenizer.ptbtokenizer import PTBTokenizer
 from .bleu.bleu import Bleu
 from .rouge.rouge import Rouge
 from .cider.cider import Cider
-from .spice.spice import Spice
 import json
 
 class COCOEvalCap:
@@ -20,30 +19,25 @@ class COCOEvalCap:
         res = self.res
         
 
-        # =================================================
+
         # Set up scorers
-        # =================================================
         print('tokenization...')
         tokenizer = PTBTokenizer()
         gts  = tokenizer.tokenize(gts)
         res = tokenizer.tokenize(res)
         print(gts)
         print(res)
-        # =================================================
+
         # Set up scorers
-        # =================================================
         print('setting up scorers...')
         scorers = [
             (Bleu(4), ["Bleu_1", "Bleu_2", "Bleu_3", "Bleu_4"]),
-            #(Meteor(),"METEOR"),
             (Rouge(), "ROUGE_L"),
-            #(Cider(), "CIDEr"),
-            (Spice(),"SPICE")
+            (Cider(), "CIDEr")
         ]
 
-        # =================================================
+
         # Compute scores
-        # =================================================
         eval = {}
         for scorer, method in scorers:
             print('computing %s score...'%(scorer.method()))
