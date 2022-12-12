@@ -19,6 +19,8 @@ import skimage.io as io
 import PIL.Image
 
 import cog
+import tqdm
+import json
 
 # import torch
 
@@ -44,54 +46,56 @@ WEIGHTS_PATHS = {
 D = torch.device
 CPU = torch.device("cpu")
 
+#need to figure cog out 
 
-class Predictor(cog.Predictor):
-    def setup(self):
-        """Load the model into memory to make running multiple predictions efficient"""
-        self.device = torch.device("cuda")
-        self.clip_model, self.preprocess = clip.load(
-            "ViT-B/32", device=self.device, jit=False
-        )
-        self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+# class Predictor(cog.Predictor): 
+#     def setup(self):
+#         """Load the model into memory to make running multiple predictions efficient"""
+#         #self.device = torch.device("cuda")
+#         self.device = torch.device("cpu")
+#         self.clip_model, self.preprocess = clip.load(
+#             "ViT-B/32", device=self.device, jit=False
+#         )
+#         self.tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
 
-        self.models = {}
-        self.prefix_length = 10
-        for key, weights_path in WEIGHTS_PATHS.items():
-            model = ClipCaptionModel(self.prefix_length)
-            model.load_state_dict(torch.load(weights_path, map_location=CPU))
-            model = model.eval()
-            model = model.to(self.device)
-            self.models[key] = model
+#         self.models = {}
+#         self.prefix_length = 10
+#         for key, weights_path in WEIGHTS_PATHS.items():
+#             model = ClipCaptionModel(self.prefix_length)
+#             model.load_state_dict(torch.load(weights_path, map_location=CPU))
+#             model = model.eval()
+#             model = model.to(self.device)
+#             self.models[key] = model
 
-    @cog.input("image", type=cog.Path, help="Input image")
-    @cog.input(
-        "model",
-        type=str,
-        options=WEIGHTS_PATHS.keys(),
-        default="coco",
-        help="Model to use",
-    )
-    @cog.input(
-        "use_beam_search",
-        type=bool,
-        default=False,
-        help="Whether to apply beam search to generate the output text",
-    )
-    def predict(self, image, model, use_beam_search):
-        """Run a single prediction on the model"""
-        image = io.imread(image)
-        model = self.models[model]
-        pil_image = PIL.Image.fromarray(image)
-        image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
-        with torch.no_grad():
-            prefix = self.clip_model.encode_image(image).to(
-                self.device, dtype=torch.float32
-            )
-            prefix_embed = model.clip_project(prefix).reshape(1, self.prefix_length, -1)
-        if use_beam_search:
-            return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
-        else:
-            return generate2(model, self.tokenizer, embed=prefix_embed)
+#     @cog.input("image", type=cog.Path, help="Input image")
+#     @cog.input(
+#         "model",
+#         type=str,
+#         options=WEIGHTS_PATHS.keys(),
+#         default="coco",
+#         help="Model to use",
+#     )
+#     @cog.input(
+#         "use_beam_search",
+#         type=bool,
+#         default=False,
+#         help="Whether to apply beam search to generate the output text",
+#     )
+#     def predict(self, image, model, use_beam_search):
+#         """Run a single prediction on the model"""
+#         image = io.imread(image)
+#         model = self.models[model]
+#         pil_image = PIL.Image.fromarray(image)
+#         image = self.preprocess(pil_image).unsqueeze(0).to(self.device)
+#         with torch.no_grad():
+#             prefix = self.clip_model.encode_image(image).to(
+#                 self.device, dtype=torch.float32
+#             )
+#             prefix_embed = model.clip_project(prefix).reshape(1, self.prefix_length, -1)
+#         if use_beam_search:
+#             return generate_beam(model, self.tokenizer, embed=prefix_embed)[0]
+#         else:
+#             return generate2(model, self.tokenizer, embed=prefix_embed)
 
 
 class MLP(nn.Module):
@@ -300,3 +304,61 @@ def generate2(
             generated_list.append(output_text)
 
     return generated_list[0]
+
+#added to not use cog
+def predict_caption(image):
+        #image = '/Users/ananyasahu/nlp_project/CLIP_prefix_caption/Images/COCO_val2014_000000060623.jpg'
+        use_beam_search = False
+        device = torch.device("cpu")
+        clip_model, preprocess = clip.load("ViT-B/32", device=device, jit=False)
+        tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+
+        
+        prefix_length = 10
+        
+        model = ClipCaptionModel(prefix_length)
+        #model.load_state_dict(torch.load(WEIGHTS_PATHS["coco"], map_location=CPU)) 
+        model = model.eval()
+        model = model.to(device)
+           
+        
+        image = io.imread(image)
+        pil_image = PIL.Image.fromarray(image)
+        image = preprocess(pil_image).unsqueeze(0).to(device)
+        with torch.no_grad():
+            prefix = clip_model.encode_image(image).to(
+                device, dtype=torch.float32
+            )
+            prefix_embed = model.clip_project(prefix).reshape(1, prefix_length, -1)
+        if use_beam_search:
+            return generate_beam(model, tokenizer, embed=prefix_embed)[0]
+        else:
+            return generate2(model, tokenizer, embed=prefix_embed)
+
+def main():
+        generated_captions = {}
+        #load the validation imgs 
+        with open('./data/coco/annotations/train_caption.json', 'r') as f:
+            data = json.load(f)
+        
+        for i in tqdm(len(data)): #changed len(data) to 100
+            d = data[i]
+            img_id = d["image_id"]
+            filename = f"./data/coco/val2014/COCO_val2014_{int(img_id):012d}.jpg"
+            gen = predict_caption(filename)
+            generated_captions[data[i]] = gen
+        
+
+        with open("captions", "w") as outfile:
+            json.dump(generated_captions, outfile)
+
+    
+if __name__ == '__main__':
+    main()
+
+
+     
+
+
+
+    
