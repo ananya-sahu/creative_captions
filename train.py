@@ -21,7 +21,6 @@ class MappingType(Enum):
 class ClipCocoDataset(Dataset):
 
     def __len__(self) -> int:
-        print(len(self.captions_tokens))
         return len(self.captions_tokens)
 
     def pad_tokens(self, item: int):
@@ -41,8 +40,7 @@ class ClipCocoDataset(Dataset):
 
     def __getitem__(self, item: int) -> Tuple[torch.Tensor, ...]:
         tokens, mask = self.pad_tokens(item)
-        p = self.caption2embedding[item]
-        prefix = self.prefixes[p]
+        prefix = self.prefixes[self.caption2embedding[item]]
         if self.normalize_prefix:
             prefix = prefix.float()
             prefix = prefix / prefix.norm(2, -1)
@@ -291,11 +289,10 @@ def load_model(config_path: str, epoch_or_latest: Union[str, int] = '_latest'):
 
 
 def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
-          lr: float = 2e-5, warmup_steps: int = 1000, output_dir: str = ".", output_prefix: str = ""):
-    #for 500 train warmup = 40; epochs = 20 
+          lr: float = 2e-5, warmup_steps: int = 5000, output_dir: str = ".", output_prefix: str = ""):
 
-    device = torch.device('cuda:0') #changed
-   # device = torch.device('cpu')
+    # device = torch.device('cuda:0') #changed
+    device = torch.device('cpu')
     batch_size = args.bs
     epochs = args.epochs
     if not os.path.exists(output_dir):
@@ -318,7 +315,6 @@ def train(dataset: ClipCocoDataset, model: ClipCaptionModel, args,
             outputs = model(tokens, prefix, mask)
             logits = outputs.logits[:, dataset.prefix_length - 1: -1]
             loss = nnf.cross_entropy(logits.reshape(-1, logits.shape[-1]), tokens.flatten(), ignore_index=0)
-            print(loss)
             loss.backward()
             optimizer.step()
             scheduler.step()
