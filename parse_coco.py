@@ -1,5 +1,5 @@
-import skimage.io as io
 import torch
+import skimage.io as io
 import clip
 from PIL import Image
 import pickle
@@ -10,17 +10,17 @@ import argparse
 
 
 def main(clip_model_type: str):
-    #device = torch.device('cuda:0') changed
-    device = torch.device('cpu')
+    device = torch.device('cuda:0') 
+    #device = torch.device('cpu')
     clip_model_name = clip_model_type.replace('/', '_')
     out_path = f"./data/coco/oscar_split_{clip_model_name}_train.pkl"
     clip_model, preprocess = clip.load(clip_model_type, device=device, jit=False)
-    with open('./data/coco/annotations/train_caption_filtered.json', 'r') as f:
+    with open('./data/coco/annotations/train_caption.json', 'r') as f:
         data = json.load(f)
     print("%0d captions loaded from json " % len(data))
     all_embeddings = []
     all_captions = []
-    for i in tqdm(range(len(data))): #len(data))
+    for i in tqdm(range(100)): #changed len(data) to 100
         d = data[i]
         img_id = d["image_id"]
         filename = f"./data/coco/train2014/COCO_train2014_{int(img_id):012d}.jpg"
