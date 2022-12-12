@@ -1,0 +1,9 @@
+01-Nov 01:58:46 - Training, Metaphor Loss: 0.020 Novelty Loss: 0.001
+01-Nov 01:58:46 - Validating, Metaphoricity, P: 0.250, R: 0.579, F1: 0.349
+01-Nov 01:58:46 - Validating, Novelty: Pearson's r 0.556023855554625, MAE: 0.18115706163607534
+01-Nov 02:02:20 - Training, Metaphor Loss: 0.015 Novelty Loss: 0.001
+01-Nov 02:02:21 - Validating, Metaphoricity, P: 0.268, R: 0.579, F1: 0.367
+01-Nov 02:02:21 - Validating, Novelty: Pearson's r 0.6377905111250639, MAE: 0.1825030466929078
+01-Nov 02:02:21 - Best Model
+01-Nov 02:02:21 - Testing, Metaphoricity, P: 0.562, R: 0.643, F1: 0.600
+01-Nov 02:02:21 - Testing, Novelty: Pearson's r 0.29086894445567935, MAE: 0.1757340743898281

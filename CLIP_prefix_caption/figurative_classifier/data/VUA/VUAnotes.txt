@@ -1,0 +1,11 @@
+Notes for VUA data:
+This is a dataset only for verbs based on the shared task, which have test and trianing split.
+The validation set used here is a portion of the training set from the shared task 
+(a portion of sentences not of texts)
+
+Total: 23114
+
+Training: 17240
+Validation: 3448
+Test: 5874
+The above corresponds to VUA_formatted_train.csv, VUA_formatted_val.csv, VUA_formatted_test.csv
