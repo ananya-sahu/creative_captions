@@ -89,6 +89,21 @@ Generate Predictions for Fine-tuning method 2:
 python3 predict_finetune2.py 
 ```
 
+## Evaluation 
+
+To run the evaluation scripts, cd into the pycocoevalcap directory and upload the generated caption json files. Copy the path of the captions files into creative.py file for evaluation on all the captions. To evaluate single captions copy the caption to be evaluated into creative_scorer_indivudal.py. Note for indivudal captions, the corpus from which the caption came is still needed in order to generate a score. 
+
+Generate scores on all captions:
+```
+python3 creative.py 
+```
+
+Generate scores on a single caption:
+```
+python3 creative_scorer_individual.py 
+```
+
+
 
 
 
