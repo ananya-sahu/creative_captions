@@ -56,9 +56,9 @@ conda activate clip_prefix_caption
 To train the CLIP-GPT2 baseline model, we first parse the data to extract CLIP features. Then we train the model with Fine-tuning of GPT2. Finally we generate predictions. To train the CLIP-GPT2 conditioned model with the first fine-tuning method, we fine-tune GPT2 on the cleaned creative corpora provided in our repo and train GPT2 seperatley first. Then we train the CLIP-GPT2 model with fine-tuning of GPT2 with loaded GPT2 weights from our first fine-tuning. Then we predict as with the baseline. To train the CLIP-GPT2 conditioned model with thesecond fine-tuning method, we train CLIP-GPT2 model with only training the transformer mapping network. We then use the weights from our fine-tuned GPT2 on the creative copora at predicition time to generate our captions. Below are the steps and commands that correspond to each step for the training the model.
 ## COCO training
 
-Download [train_captions](https://drive.google.com/file/d/1D3EzUK1d1lNhD2hAvRiKPThidiVbP2K_/view?usp=sharing) to `data/coco/annotations`.
+Download train_captions from https://drive.google.com/file/d/1D3EzUK1d1lNhD2hAvRiKPThidiVbP2K_/view?usp=sharing to `data/coco/annotations`.
 
-Download [training images](http://images.cocodataset.org/zips/train2014.zip) and [validation images](http://images.cocodataset.org/zips/val2014.zip) and unzip (We use Karpathy et el. split).
+Download training images from http://images.cocodataset.org/zips/train2014.zip and validation images http://images.cocodataset.org/zips/val2014.zip 
 
 Extract CLIP features using (output is `data/coco/oscar_split_ViT-B_32_train.pkl`):
 ```
