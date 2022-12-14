@@ -140,23 +140,8 @@ python train.py --data <data_root>/conceptual_clip_ViT-B_32_train.pkl --out_dir 
 ```
 Similarly to the COCO training, you can train a transformer mapping network, and / or parse the images using a ResNet-based CLIP. 
 
-## Citation
-If you use this code for your research, please cite:
-```
-@article{mokady2021clipcap,
-  title={ClipCap: CLIP Prefix for Image Captioning},
-  author={Mokady, Ron and Hertz, Amir and Bermano, Amit H},
-  journal={arXiv preprint arXiv:2111.09734},
-  year={2021}
-}
-```
-
-
-
 
 ## Acknowledgments
-This repository is heavily based on [CLIP](https://github.com/openai/CLIP) and [Hugging-faces](https://github.com/huggingface/transformers) repositories.
-For training we used the data of [COCO dataset](https://cocodataset.org/#home) and [Conceptual Captions](https://ai.google.com/research/ConceptualCaptions/).
+This repository is heavily based on [CLIPCap](https://github.com/rmokady/CLIP_prefix_caption) and [CLIP](https://github.com/openai/CLIP) and [Hugging-faces](https://github.com/huggingface/transformers) repositories.
+For training we used the data of [COCO dataset](https://cocodataset.org/#home) and [VUA corpus](http://www.vismet.org/metcor/documentation/home.html).
 
-## Contact
-For any inquiry please contact us at our email addresses: ron.mokady@gmail.com or amirhertz@mail.tau.ac.il.
