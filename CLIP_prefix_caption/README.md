@@ -60,17 +60,34 @@ Download [training images](http://images.cocodataset.org/zips/train2014.zip) and
 
 Extract CLIP features using (output is `data/coco/oscar_split_ViT-B_32_train.pkl`):
 ```
-python parse_coco.py --clip_model_type ViT-B/32
+python3 parse_coco.py --clip_model_type ViT-B/32
 ```
 Train with fine-tuning of GPT2:
 ```
-python train.py --data ./data/coco/oscar_split_ViT-B_32_train.pkl --out_dir ./coco_train/
+python3 train.py --data ./data/coco/oscar_split_ViT-B_32_train.pkl --out_dir ./coco_train/
 ```
 
 Train only transformer mapping network:
 ```
-python train.py --only_prefix --data ./data/coco/oscar_split_ViT-B_32_train.pkl --out_dir ./coco_train/ --mapping_type transformer  --num_layres 8 --prefix_length 40 --prefix_length_clip 40
+python3 train.py --only_prefix --data ./data/coco/oscar_split_ViT-B_32_train.pkl --out_dir ./coco_train/ --mapping_type transformer  --num_layres 8 --prefix_length 10 --prefix_length_clip 10
 ```
+
+Fine-tune GPT2 on creative corpus:
+```
+python3 train_fine_tune.py 
+```
+
+Generate Predictions for Fine-tuning method 1 and baseline:
+```
+python3 predict.py 
+```
+
+Generate Predictions for Fine-tuning method 2:
+```
+python3 predict_finetune2.py 
+```
+
+
 
 
 ## Acknowledgments
