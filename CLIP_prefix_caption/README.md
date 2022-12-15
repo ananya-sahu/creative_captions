@@ -96,7 +96,7 @@ python3 creative_scorer_individual.py
 
 
 ## Authored
-Aditi authored the baseline metrics, except BertScore, and automatic metric. Both Aditi and Ananya authored the train and predict changes. Ananya authored the Bert Score, train_fine_tune and predict_fine_tune code for the two fine-tuned models. Also included is train_clip_bart and predict_clip_bart which was not included in the final paper, but authored by Aditi.  
+Aditi authored the baseline metrics, except BertScore, and automatic metric's creative files. Both Aditi and Ananya authored the train and predict changes. Ananya authored the Bert Score, train_fine_tune and predict_fine_tune code for the two fine-tuned models. Both Ananya and Aditi authored the classifier_for_weights Jupyter notebook. Ananya authored the training and predicting for VUA corpus. Also included is train_clip_bart and predict_clip_bart which was not included in the final paper, but authored by Aditi.  
 
 
 ## Acknowledgments
