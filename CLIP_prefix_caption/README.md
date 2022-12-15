@@ -4,14 +4,7 @@
 ## Implementation for the "Creative Metric for Evaluating Image Caption Generation"
 
 
-
-## Description  
-Image captioning is a complicated task, where usually a pretrained detection network is used, requires additional supervision in the form of object annotation. We present a new approach that does not requires additional information (i.e. requires only images and captions), thus can be applied to any data. In addition, our model's training time is much faster than similar methods while achieving comparable to state-of-the-art results, even for the Conceptual Captions dataset contains over 3M images. 
-
-In our work, we use the [CLIP](https://github.com/openai/CLIP) model, which was already trained over an extremely large number of images, thus is capable of generating semantic encodings for arbitrary images without additional supervision. To produce meaningful sentences we fine-tune a pretrained language model, which has been proven to be successful for other natural language tasks. The key idea is to use the CLIP encoding as a prefix to the textual captions by employing a simple mapping network over the raw encoding, and then fine-tune our language model to generate a valid caption. In addition, we present another variant, where we utilize a transformer architecture for the mapping network and avoid the fine-tuning of GPT-2. Still, our light model achieve comaparable to state-of-the-art over nocaps dataset.
-
-
-## Enviormentment Set Up
+## Enviroment Set Up
 
 Cloning and set up:  
 ```
@@ -102,10 +95,11 @@ python3 creative_scorer_individual.py
 ```
 
 
-
+## Authored
+Aditi authored the baseline metrics, except BertScore, and automatic metric. Both Aditi and Ananya authored the train and predict changes. Ananya authored the Bert Score, train_fine_tune and predict_fine_tune code for the two fine-tuned models. Also included is train_clip_bart and predict_clip_bart which was not included in the final paper, but authored by Aditi.  
 
 
 ## Acknowledgments
-This repository is heavily based on [CLIPCap](https://github.com/rmokady/CLIP_prefix_caption) and [CLIP](https://github.com/openai/CLIP) and [Hugging-faces](https://github.com/huggingface/transformers) repositories.
+This repository is heavily based on [CLIPCap](https://github.com/rmokady/CLIP_prefix_caption) and [CLIP](https://github.com/openai/CLIP) and [Hugging-faces](https://github.com/huggingface/transformers) repositories. The code in the files "train.py", "parse_coco.py" come directly from the ClipCap repository. "fine_tuned_train.py" is also the same as "train.py" except for a minor change of loading the new weights. 
 For training we used the data of [COCO dataset](https://cocodataset.org/#home) and [VUA corpus](http://www.vismet.org/metcor/documentation/home.html).
 
