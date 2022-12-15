@@ -96,9 +96,19 @@ Generate Predictions for Fine-tuning method 2:
 python3 predict_finetune2.py 
 ```
 
-## Evaluation 
+## Evaluation - Baseline Metrics
 
-To run the baseline evaluation scripts run the following scripts:
+For baseline metrics, our code is based upon [Microsoft COCO Caption Evaluation](https://github.com/daqingliu/coco-caption) repository. The code for calcaulting and scoring the metrics must be cloned from this repository in order to evaluate them here by doing so:
+
+```
+git clone -b python3 https://github.com/XgDuan/coco-caption.git
+```
+
+We used the BLEU, CIDEr, and ROUGE folders from this repository to calculate the metric. Then, in order to evaluate on the creatively generated captions, cd into the ClIP_prefix_caption directory and run 
+
+```
+python3 -m pycocoevalcap.eval
+```
 
 To generate BertScores first copy the path of the annotated captions file and the generated captions to bert_score_eval.py.
 Then run:
@@ -106,7 +116,7 @@ Then run:
 python3 bert_score_eval.py 
 ```
 
-
+## Evaluation - Automatic Metric
 To run the creative evaluation scripts, cd into the pycocoevalcap directory and upload the generated caption json files. Copy the path of the captions files into creative.py file for evaluation on all the captions. To evaluate single captions copy the caption to be evaluated into creative_scorer_indivudal.py. Note for indivudal captions, the corpus from which the caption came is still needed in order to generate a score. 
 
 Generate scores on all captions:
