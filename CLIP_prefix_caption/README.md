@@ -107,7 +107,7 @@ python3 bert_score_eval.py
 ```
 
 
-To run the evaluation scripts, cd into the pycocoevalcap directory and upload the generated caption json files. Copy the path of the captions files into creative.py file for evaluation on all the captions. To evaluate single captions copy the caption to be evaluated into creative_scorer_indivudal.py. Note for indivudal captions, the corpus from which the caption came is still needed in order to generate a score. 
+To run the creative evaluation scripts, cd into the pycocoevalcap directory and upload the generated caption json files. Copy the path of the captions files into creative.py file for evaluation on all the captions. To evaluate single captions copy the caption to be evaluated into creative_scorer_indivudal.py. Note for indivudal captions, the corpus from which the caption came is still needed in order to generate a score. 
 
 Generate scores on all captions:
 ```
