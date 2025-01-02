@@ -4,7 +4,7 @@
 ## Implementation for the "Creative Metric for Evaluating Image Caption Generation"
 
 
-## Enviroment Set Up
+## Environment Set Up
 
 Cloning and set up:  
 ```
